@@ -1,0 +1,7 @@
+.env
+.idea
+.vscode
+!/database/initdb/.gitkeep
+/database/initdb/*
+!/database/mysql/.gitkeep
+/database/mysql/*
