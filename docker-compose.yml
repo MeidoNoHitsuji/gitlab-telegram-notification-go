@@ -2,8 +2,11 @@ version: '3.1'
 
 services:
   bot:
-    build: ./
+    build: ./app
     container_name: telegram-bot
+    volumes:
+      - ./app:/go/src/github.com/meidonohitsuji/gitlab-telegram-notification-go
+      - ./.env:/go/src/github.com/meidonohitsuji/gitlab-telegram-notification-go/.env
   mysql:
     image: mysql
     command: --default-authentication-plugin=mysql_native_password
