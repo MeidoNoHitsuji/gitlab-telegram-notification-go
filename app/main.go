@@ -1,22 +1,22 @@
 package main
 
 import (
-	"github.com/joho/godotenv"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"gitlab-telegram-notification-go/database"
 	"log"
 	"os"
-
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"time"
 )
 
-func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-}
+var (
+	bot *tgbotapi.BotAPI
+	err error
+)
 
 func main() {
-	bot, err := tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_API_TOKEN"))
+	_ = database.Instant()
+	bot, err = tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_TOKEN"))
+
 	if err != nil {
 		panic(err)
 	}
@@ -27,6 +27,8 @@ func main() {
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
+
+	go loop()
 
 	updates := bot.GetUpdatesChan(u)
 
@@ -51,6 +53,8 @@ func main() {
 			msg.Text = "Hi :)"
 		case "status":
 			msg.Text = "I'm ok."
+		case "start":
+			msg.Text = "I'm ok."
 		default:
 			msg.Text = "I don't know that command"
 		}
@@ -58,5 +62,15 @@ func main() {
 		if _, err := bot.Send(msg); err != nil {
 			log.Panic(err)
 		}
+	}
+}
+
+func loop() {
+	msg := tgbotapi.NewMessage(479413765, "Привет")
+	for {
+		if _, err := bot.Send(msg); err != nil {
+			log.Panic(err)
+		}
+		time.Sleep(60 * time.Second)
 	}
 }
