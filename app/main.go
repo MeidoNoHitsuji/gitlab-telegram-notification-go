@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"gitlab-telegram-notification-go/database"
+	"github.com/joho/godotenv"
+	"github.com/xanzy/go-gitlab"
 	"log"
 	"os"
 	"time"
@@ -13,9 +16,21 @@ var (
 	err error
 )
 
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Print(".env not load!!")
+	}
+}
+
 func main() {
-	_ = database.Instant()
+	//_ = database.Instant()
 	bot, err = tgbotapi.NewBotAPI(os.Getenv("TELEGRAM_TOKEN"))
+
+	git, err := gitlab.NewClient(os.Getenv("GITLAB_TOKEN"), gitlab.WithBaseURL(os.Getenv("GITLAB_URL")))
+	if err != nil {
+		log.Fatalf("Failed to create client: %v", err)
+	}
 
 	if err != nil {
 		panic(err)
@@ -28,7 +43,49 @@ func main() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	go loop()
+	//go loop()
+
+	page := 1
+	perPage := 20
+
+	projects, _, err := git.Projects.ListProjects(&gitlab.ListProjectsOptions{
+		ListOptions: gitlab.ListOptions{Page: page, PerPage: perPage},
+	})
+
+	var data []interface{}
+
+	for {
+		for _, project := range projects {
+			//userData := map[string]interface{}{
+			//	"id":       user.ID,
+			//	"username": user.Username,
+			//	"email":    user.Email,
+			//}
+
+			data = append(data, map[string]interface{}{
+				"id":   project.ID,
+				"name": project.Name,
+			})
+		}
+		if len(projects) == perPage {
+			page++
+			projects, _, err = git.Projects.ListProjects(&gitlab.ListProjectsOptions{
+				ListOptions: gitlab.ListOptions{Page: page, PerPage: perPage},
+			})
+		} else {
+			break
+		}
+	}
+
+	projectJson, _ := json.Marshal(data)
+
+	msg := tgbotapi.NewMessage(479413765, string(projectJson))
+
+	if _, err := bot.Send(msg); err != nil {
+		log.Panic(err)
+	}
+
+	//git.Projects.AddProjectHook()
 
 	updates := bot.GetUpdatesChan(u)
 
@@ -47,12 +104,9 @@ func main() {
 
 		// Extract the command from the Message.
 		switch update.Message.Command() {
-		case "help":
-			msg.Text = "I understand /sayhi and /status."
-		case "sayhi":
-			msg.Text = "Hi :)"
-		case "status":
-			msg.Text = "I'm ok."
+		case "subscribe":
+			fmt.Println(update.Message.CommandArguments())
+			msg.Text = "kekw."
 		case "start":
 			msg.Text = "I'm ok."
 		default:
