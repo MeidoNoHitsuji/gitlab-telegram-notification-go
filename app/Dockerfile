@@ -10,4 +10,4 @@ COPY . /go/src/github.com/meidonohitsuji/gitlab-telegram-notification-go
 
 RUN go build -o /gitlab-telegram-notification-go
 
-CMD [ "/gitlab-telegram-notification-go" ]
+CMD sleep 2 && "/gitlab-telegram-notification-go"

@@ -32,45 +32,22 @@ func main() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	//page := 1
-	//perPage := 20
+	chat, err := bot.GetChat(tgbotapi.ChatInfoConfig{
+		ChatConfig: tgbotapi.ChatConfig{
+			//ChatID: 479413765,
+			SuperGroupUsername: "meidonohitsuji",
+		},
+	})
 
-	//projects, _, err := git.Projects.ListProjects(&gitlab.ListProjectsOptions{
-	//	ListOptions: gitlab.ListOptions{Page: page, PerPage: perPage},
-	//})
-	//
-	//var data []interface{}
-	//
-	//for {
-	//	for _, project := range projects {
-	//		//userData := map[string]interface{}{
-	//		//	"id":       user.ID,
-	//		//	"username": user.Username,
-	//		//	"email":    user.Email,
-	//		//}
-	//
-	//		data = append(data, map[string]interface{}{
-	//			"id":   project.ID,
-	//			"name": project.Name,
-	//		})
-	//	}
-	//	if len(projects) == perPage {
-	//		page++
-	//		projects, _, err = git.Projects.ListProjects(&gitlab.ListProjectsOptions{
-	//			ListOptions: gitlab.ListOptions{Page: page, PerPage: perPage},
-	//		})
-	//	} else {
-	//		break
-	//	}
-	//}
-	//
-	//_, _ = json.Marshal(data)
+	if err != nil {
+		log.Panic(err)
+	}
 
-	//msg := tgbotapi.NewMessage(479413765, string(projectJson))
+	msg := tgbotapi.NewMessage(chat.ID, "kekw.")
 
-	//if _, err := bot.Send(msg); err != nil {
-	//	log.Panic(err)
-	//}
+	if _, err := bot.Send(msg); err != nil {
+		log.Panic(err)
+	}
 
 	//git.Projects.AddProjectHook()
 

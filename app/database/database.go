@@ -26,7 +26,11 @@ func New() *gorm.DB {
 	}
 
 	ms := []interface{}{
+		&models.TelegramChannel{},
 		&models.User{},
+		&models.Project{},
+		&models.Subscribe{},
+		&models.SubscribeEvent{},
 	}
 
 	if err = db.AutoMigrate(ms...); err != nil {
