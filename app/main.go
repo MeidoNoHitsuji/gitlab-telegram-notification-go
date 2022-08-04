@@ -8,6 +8,7 @@ import (
 	"gitlab-telegram-notification-go/client"
 	"gitlab-telegram-notification-go/command"
 	"gitlab-telegram-notification-go/database"
+	"gitlab-telegram-notification-go/models"
 	"gitlab-telegram-notification-go/webhook"
 	"log"
 	"net/http"
@@ -22,7 +23,7 @@ func init() {
 }
 
 func main() {
-	_ = database.Instant()
+	db := database.Instant()
 	bot := client.Telegram()
 
 	go runWebServer(os.Getenv("GITLAB_SECRET"), os.Getenv("WEBHOOK_PORT"))
@@ -34,8 +35,8 @@ func main() {
 
 	chat, err := bot.GetChat(tgbotapi.ChatInfoConfig{
 		ChatConfig: tgbotapi.ChatConfig{
-			//ChatID: 479413765,
-			SuperGroupUsername: "meidonohitsuji",
+			ChatID: 479413765,
+			//SuperGroupUsername: "meidonohitsuji",
 		},
 	})
 
@@ -54,6 +55,33 @@ func main() {
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
+
+		if update.MyChatMember != nil {
+			if update.MyChatMember.Chat.Type == "private" {
+				if update.MyChatMember.OldChatMember.Status == "left" && update.MyChatMember.NewChatMember.Status == "member" {
+
+				} else if update.MyChatMember.OldChatMember.Status == "member" && update.MyChatMember.NewChatMember.Status == "left" {
+					
+				}
+			} else if update.MyChatMember.Chat.Type == "group" {
+				if update.MyChatMember.OldChatMember.Status == "left" && update.MyChatMember.NewChatMember.Status == "member" {
+					channel := models.TelegramChannel{
+						ID: update.MyChatMember.Chat.ID,
+					}
+					db.Model(&models.TelegramChannel{}).FirstOrCreate(&channel)
+					channel.Active = true
+					db.Save(&channel)
+				} else if update.MyChatMember.OldChatMember.Status == "member" && update.MyChatMember.NewChatMember.Status == "left" {
+					channel := models.TelegramChannel{
+						ID: update.MyChatMember.Chat.ID,
+					}
+					db.Model(&models.TelegramChannel{}).FirstOrCreate(&channel)
+					channel.Active = false
+					db.Save(&channel)
+				}
+			}
+		}
+
 		if update.Message == nil { // ignore any non-Message updates
 			continue
 		}
