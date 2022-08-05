@@ -5,10 +5,9 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 	"github.com/xanzy/go-gitlab"
-	"gitlab-telegram-notification-go/client"
 	"gitlab-telegram-notification-go/command"
 	"gitlab-telegram-notification-go/database"
-	"gitlab-telegram-notification-go/models"
+	"gitlab-telegram-notification-go/telegram"
 	"gitlab-telegram-notification-go/webhook"
 	"log"
 	"net/http"
@@ -23,8 +22,8 @@ func init() {
 }
 
 func main() {
-	db := database.Instant()
-	bot := client.Telegram()
+	_ = database.Instant()
+	bot := telegram.Instant()
 
 	go runWebServer(os.Getenv("GITLAB_SECRET"), os.Getenv("WEBHOOK_PORT"))
 
@@ -32,23 +31,6 @@ func main() {
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
-
-	chat, err := bot.GetChat(tgbotapi.ChatInfoConfig{
-		ChatConfig: tgbotapi.ChatConfig{
-			ChatID: 479413765,
-			//SuperGroupUsername: "meidonohitsuji",
-		},
-	})
-
-	if err != nil {
-		log.Panic(err)
-	}
-
-	msg := tgbotapi.NewMessage(chat.ID, "kekw.")
-
-	if _, err := bot.Send(msg); err != nil {
-		log.Panic(err)
-	}
 
 	//git.Projects.AddProjectHook()
 
@@ -58,26 +40,16 @@ func main() {
 
 		if update.MyChatMember != nil {
 			if update.MyChatMember.Chat.Type == "private" {
-				if update.MyChatMember.OldChatMember.Status == "left" && update.MyChatMember.NewChatMember.Status == "member" {
-
-				} else if update.MyChatMember.OldChatMember.Status == "member" && update.MyChatMember.NewChatMember.Status == "left" {
-					
+				if update.MyChatMember.OldChatMember.Status == "kicked" && update.MyChatMember.NewChatMember.Status == "member" {
+					database.UpdateMemberStatus(update.MyChatMember.Chat.ID, update.MyChatMember.From.UserName, false)
+				} else if update.MyChatMember.OldChatMember.Status == "member" && update.MyChatMember.NewChatMember.Status == "kicked" {
+					database.UpdateMemberStatus(update.MyChatMember.Chat.ID, update.MyChatMember.From.UserName, true)
 				}
 			} else if update.MyChatMember.Chat.Type == "group" {
 				if update.MyChatMember.OldChatMember.Status == "left" && update.MyChatMember.NewChatMember.Status == "member" {
-					channel := models.TelegramChannel{
-						ID: update.MyChatMember.Chat.ID,
-					}
-					db.Model(&models.TelegramChannel{}).FirstOrCreate(&channel)
-					channel.Active = true
-					db.Save(&channel)
+					database.UpdateChatStatus(update.MyChatMember.Chat.ID, false)
 				} else if update.MyChatMember.OldChatMember.Status == "member" && update.MyChatMember.NewChatMember.Status == "left" {
-					channel := models.TelegramChannel{
-						ID: update.MyChatMember.Chat.ID,
-					}
-					db.Model(&models.TelegramChannel{}).FirstOrCreate(&channel)
-					channel.Active = false
-					db.Save(&channel)
+					database.UpdateChatStatus(update.MyChatMember.Chat.ID, true)
 				}
 			}
 		}
@@ -90,23 +62,23 @@ func main() {
 			continue
 		}
 
-		// Create a new MessageConfig. We don't have text yet,
-		// so we leave it empty.
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
-
 		// Extract the command from the Message.
 		switch update.Message.Command() {
 		case "subscribe":
-			text, _ := command.Subscribe(update.Message.CommandArguments())
-			msg.Text = text
+			text, _, err := command.Subscribe(update.Message.Chat.ID, update.Message.CommandArguments())
+			if err == nil {
+				telegram.SendMessageById(update.Message.Chat.ID, text)
+			} else {
+				telegram.SendMessageById(update.Message.Chat.ID, fmt.Sprintf("Ошибка! Не удалось подписаться по причине: %s", err))
+			}
+			break
 		case "start":
-			msg.Text = "I'm ok."
+			database.UpdateMemberStatus(update.Message.Chat.ID, update.Message.From.UserName, false)
+			telegram.SendMessageById(update.Message.Chat.ID, "Привет! Мой список команд доступен тебе через `/`.")
+			break
 		default:
-			msg.Text = "I don't know that command"
-		}
-
-		if _, err := bot.Send(msg); err != nil {
-			log.Panic(err)
+			telegram.SendMessageById(update.Message.Chat.ID, "Я не понимаю, что ты от меня хочешь.")
+			break
 		}
 	}
 }
@@ -122,7 +94,7 @@ func runWebServer(Secret string, Port string) {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/webhook", wh)
+	mux.Handle(fmt.Sprintf("/%s", os.Getenv("WEBHOOK_URL")), wh)
 
 	if err := http.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", Port), mux); err != nil {
 		log.Fatalf("HTTP server ListenAndServe: %v", err)

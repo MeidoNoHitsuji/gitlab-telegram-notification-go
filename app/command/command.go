@@ -1,37 +1,68 @@
 package command
 
 import (
-	"fmt"
+	"errors"
 	"github.com/xanzy/go-gitlab"
-	"gitlab-telegram-notification-go/client"
+	"gitlab-telegram-notification-go/database"
+	"gitlab-telegram-notification-go/gitclient"
+	"gitlab-telegram-notification-go/helper"
 	"log"
 	"strings"
 )
 
-func Subscribe(Arguments string) (string, *gitlab.Project) {
+func getProjectFromArguments(arguments string) (*gitlab.Project, []string, error) {
+	git := gitclient.Instant()
 
-	git := client.Gitlab()
+	args := strings.Split(
+		strings.TrimSpace(arguments), " ")
 
-	arguments := strings.Split(
-		strings.TrimSpace(Arguments), " ")
-
-	if len(arguments) == 0 || len(arguments[0]) == 0 {
-		return "Вы должны передать параметром наименование проекта", nil
+	if len(args) == 0 || len(args[0]) == 0 {
+		return nil, nil, errors.New("Вы должны передать параметром наименование проекта.")
 	}
 
 	projects, _, err := git.Projects.ListProjects(&gitlab.ListProjectsOptions{
-		Search:           gitlab.String(arguments[0]),
+		Search:           gitlab.String(args[0]),
 		SearchNamespaces: gitlab.Bool(true),
 	})
 
 	if err != nil {
 		log.Print(err)
-		return "Произошла непредвиденная ошибка!", nil
+		return nil, nil, err
 	}
 
 	if len(projects) == 0 {
-		return "Не было найдено ни единого проекта", nil
+		return nil, nil, errors.New("Не было найдено ни единого проекта по вашему запросу.")
 	}
 
-	return fmt.Sprintf("TODO: Подписка на проект %s", projects[0].Name), projects[0]
+	return projects[0], args[1:], nil
+}
+
+func Subscribe(telegramId int64, arguments string) (string, *gitlab.Project, error) {
+
+	project, args, err := getProjectFromArguments(arguments)
+
+	var newArgs []string
+	allowEvents := helper.AllowEvents()
+
+	for _, a := range args {
+		if len(a) != 0 && helper.Contains(allowEvents, a) {
+			newArgs = append(newArgs, a)
+		}
+	}
+
+	// TODO: Добавить новые хуки и вынести их в клавиатуру
+	text, err := gitclient.Subscribe(project, gitlab.AddProjectHookOptions{
+		PushEvents:          gitlab.Bool(helper.Contains(newArgs, helper.Slugify(string(gitlab.EventTypePush)))),
+		PipelineEvents:      gitlab.Bool(helper.Contains(newArgs, helper.Slugify(string(gitlab.EventTypePipeline)))),
+		MergeRequestsEvents: gitlab.Bool(helper.Contains(newArgs, helper.Slugify(string(gitlab.EventTypeMergeRequest)))),
+	})
+	if err != nil {
+		return "", nil, err
+	}
+
+	if err := database.UpdateSubscribes(*project, telegramId, newArgs...); err != nil {
+		return "", nil, err
+	}
+
+	return text, project, nil
 }
