@@ -91,7 +91,7 @@ func GetSubscribesByProjectIdAndKind(projectId int, objectKind string) []models.
 	var subscribes []models.Subscribe
 	db := Instant()
 
-	builder := db.Model(&models.Subscribe{}).Preload("TelegramChannel").Joins("inner events as event on event.subscribe_id = subscribes.id")
+	builder := db.Model(&models.Subscribe{}).Preload("TelegramChannel").Joins("inner join events as event on event.subscribe_id = subscribes.id")
 	builder = builder.Where("subscribes.project_id = ? and event.event = ?", projectId, objectKind)
 	builder = builder.Find(&subscribes)
 
