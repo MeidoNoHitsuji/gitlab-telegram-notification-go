@@ -31,7 +31,7 @@ func Subscribe(project *gitlab.Project, hookOptions gitlab.AddProjectHookOptions
 		}
 	}
 
-	hookOptions.Token = gitlab.String(os.Getenv("GITLAB_TOKEN"))
+	hookOptions.Token = gitlab.String(os.Getenv("GITLAB_SECRET"))
 	hookOptions.URL = gitlab.String(webhookUrl)
 
 	var text string

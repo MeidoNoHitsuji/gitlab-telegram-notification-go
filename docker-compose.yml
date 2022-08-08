@@ -17,7 +17,8 @@ services:
   bot:
     build: ./app
     container_name: telegram-bot
-    
+    ports:
+      - "6033:6033"
     env_file: .env
     volumes:
       - ./app:/go/src/github.com/meidonohitsuji/gitlab-telegram-notification-go
