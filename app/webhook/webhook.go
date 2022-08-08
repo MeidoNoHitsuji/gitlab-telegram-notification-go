@@ -1,10 +1,10 @@
 package webhook
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/xanzy/go-gitlab"
+	"gitlab-telegram-notification-go/gitclient"
 	"io"
 	"io/ioutil"
 	"log"
@@ -28,7 +28,7 @@ func (hook Webhook) ServeHTTP(writer http.ResponseWriter, request *http.Request)
 	}
 
 	// Handle the event before we return.
-	if err := hook.handle(event); err != nil {
+	if err := gitclient.Handler(event); err != nil {
 		writer.WriteHeader(500)
 		writer.Write([]byte(fmt.Sprintf("error handling the event: %v", err)))
 		return
@@ -36,18 +36,6 @@ func (hook Webhook) ServeHTTP(writer http.ResponseWriter, request *http.Request)
 
 	// Write a response when were done.
 	writer.WriteHeader(204)
-}
-
-func (hook Webhook) handle(event interface{}) error {
-	str, err := json.Marshal(event)
-	if err != nil {
-		return fmt.Errorf("could not marshal json event for logging: %v", err)
-	}
-
-	// Just write the event for this example.
-	fmt.Println(string(str))
-
-	return nil
 }
 
 // parse verifies and parses the events specified in the request and

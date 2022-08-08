@@ -3,6 +3,8 @@ package gitclient
 import (
 	"fmt"
 	"github.com/xanzy/go-gitlab"
+	"gitlab-telegram-notification-go/database"
+	"gitlab-telegram-notification-go/telegram"
 	"os"
 )
 
@@ -43,7 +45,7 @@ func Subscribe(project *gitlab.Project, hookOptions gitlab.AddProjectHookOptions
 			return "", err
 		}
 
-		text = fmt.Sprintf("Подписка на проект [%s](%s) (%d) была добавлена.", project.Name, project.WebURL, project.ID)
+		text = fmt.Sprintf("📝 | Подписка на проект [%s](%s) (%d) была добавлена.", project.Name, project.WebURL, project.ID)
 	} else {
 		_, _, err := git.Projects.EditProjectHook(project.ID, hook.ID, &gitlab.EditProjectHookOptions{
 			ConfidentialIssuesEvents: hookOptions.ConfidentialIssuesEvents,
@@ -68,8 +70,26 @@ func Subscribe(project *gitlab.Project, hookOptions gitlab.AddProjectHookOptions
 			return "", err
 		}
 
-		text = fmt.Sprintf("Подписка на проект [%s](%s) (%d) была обновлена.", project.Name, project.WebURL, project.ID)
+		text = fmt.Sprintf("📝 | Подписка на проект [%s](%s) (%d) была обновлена.", project.Name, project.WebURL, project.ID)
 	}
 
 	return text, nil
+}
+
+func Handler(event interface{}) error {
+	switch event := event.(type) {
+	case *gitlab.MergeEvent:
+		subscribes := database.GetSubscribesByProjectIdAndKind(event.Project.ID, event.ObjectKind)
+
+		for _, subscribe := range subscribes {
+			telegram.SendMessage(&subscribe.TelegramChannel, "Новый мерж!")
+		}
+	case *gitlab.PipelineEvent:
+		subscribes := database.GetSubscribesByProjectIdAndKind(event.Project.ID, event.ObjectKind)
+
+		for _, subscribe := range subscribes {
+			telegram.SendMessage(&subscribe.TelegramChannel, "Закончился новый PipeLine!")
+		}
+	}
+	return nil
 }

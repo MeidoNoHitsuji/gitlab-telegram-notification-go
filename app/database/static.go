@@ -85,5 +85,15 @@ func UpdateSubscribes(project gitlab.Project, telegramId int64, events ...string
 	}
 
 	return nil
+}
 
+func GetSubscribesByProjectIdAndKind(projectId int, objectKind string) []models.Subscribe {
+	var subscribes []models.Subscribe
+	db := Instant()
+
+	builder := db.Model(&models.Subscribe{}).Preload("TelegramChannel").Preload("Events")
+	builder = builder.Where("subscribes.project_id = ? and subscribe_events.event = ?", projectId, projectId)
+	builder = builder.Find(&subscribes)
+
+	return subscribes
 }
