@@ -41,26 +41,26 @@ func Subscribe(telegramId int64, arguments string) (string, *gitlab.Project, err
 
 	project, args, err := getProjectFromArguments(arguments)
 
-	var newArgs []string
+	var allowArgs []string
 	allowEvents := helper.AllowEvents()
 
 	for _, a := range args {
 		if len(a) != 0 && helper.Contains(allowEvents, a) {
-			newArgs = append(newArgs, a)
+			allowArgs = append(allowArgs, a)
 		}
 	}
 
 	// TODO: Добавить новые хуки и вынести их в клавиатуру
 	text, err := gitclient.Subscribe(project, gitlab.AddProjectHookOptions{
-		PushEvents:          gitlab.Bool(helper.Contains(newArgs, helper.Slugify(string(gitlab.EventTypePush)))),
-		PipelineEvents:      gitlab.Bool(helper.Contains(newArgs, helper.Slugify(string(gitlab.EventTypePipeline)))),
-		MergeRequestsEvents: gitlab.Bool(helper.Contains(newArgs, helper.Slugify(string(gitlab.EventTypeMergeRequest)))),
+		PushEvents:          gitlab.Bool(helper.Contains(allowArgs, helper.Slugify(string(gitlab.EventTypePush)))),
+		PipelineEvents:      gitlab.Bool(helper.Contains(allowArgs, helper.Slugify(string(gitlab.EventTypePipeline)))),
+		MergeRequestsEvents: gitlab.Bool(helper.Contains(allowArgs, helper.Slugify(string(gitlab.EventTypeMergeRequest)))),
 	})
 	if err != nil {
 		return "", nil, err
 	}
 
-	if err := database.UpdateSubscribes(*project, telegramId, newArgs...); err != nil {
+	if err := database.UpdateSubscribes(*project, telegramId, allowArgs...); err != nil {
 		return "", nil, err
 	}
 

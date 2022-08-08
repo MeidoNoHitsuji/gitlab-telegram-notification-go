@@ -32,8 +32,6 @@ func main() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	//git.Projects.AddProjectHook()
-
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
@@ -54,15 +52,14 @@ func main() {
 			}
 		}
 
-		if update.Message == nil { // ignore any non-Message updates
+		if update.Message == nil {
 			continue
 		}
 
-		if !update.Message.IsCommand() { // ignore any non-command Messages
+		if !update.Message.IsCommand() {
 			continue
 		}
 
-		// Extract the command from the Message.
 		switch update.Message.Command() {
 		case "subscribe":
 			text, _, err := command.Subscribe(update.Message.Chat.ID, update.Message.CommandArguments())

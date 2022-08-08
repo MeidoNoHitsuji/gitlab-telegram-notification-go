@@ -73,7 +73,3 @@ func Subscribe(project *gitlab.Project, hookOptions gitlab.AddProjectHookOptions
 
 	return text, nil
 }
-
-func DropSubscribe(project *gitlab.Project) {
-
-}
