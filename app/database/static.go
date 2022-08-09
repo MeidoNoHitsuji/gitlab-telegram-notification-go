@@ -97,3 +97,20 @@ func GetSubscribesByProjectIdAndKind(projectId int, objectKind string) []models.
 
 	return subscribes
 }
+
+func GetEventsByProjectId(projectId int) []string {
+	var subscribes []models.Subscribe
+	var events []string
+	db := Instant()
+
+	builder := db.Model(&models.Subscribe{}).Preload("Events").Where("subscribes.project_id = ?", projectId)
+	builder = builder.Find(&subscribes)
+
+	for _, subscribe := range subscribes {
+		for _, event := range subscribe.Events {
+			events = append(events, event.Event)
+		}
+	}
+
+	return helper.Unique(events)
+}

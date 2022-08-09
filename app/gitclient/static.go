@@ -21,7 +21,7 @@ func Subscribe(project *gitlab.Project, hookOptions gitlab.AddProjectHookOptions
 		return "", err
 	}
 
-	webhookUrl := fmt.Sprintf("%s/%s", os.Getenv("WEBHOOK_DOMAIN"), os.Getenv("WEBHOOK_URL"))
+	webhookUrl := fmt.Sprintf("%s:%s/%s", os.Getenv("WEBHOOK_DOMAIN"), os.Getenv("WEBHOOK_PORT"), os.Getenv("WEBHOOK_URL"))
 
 	hook := gitlab.ProjectHook{
 		ID: 0,
@@ -82,7 +82,11 @@ func Handler(event interface{}) error {
 		subscribes := database.GetSubscribesByProjectIdAndKind(event.Project.ID, event.ObjectKind)
 
 		for _, subscribe := range subscribes {
-			telegram.SendMessage(&subscribe.TelegramChannel, "Новый мерж!")
+			message := fmt.Sprintf("🎭 Создан новый MergeRequest! | [%s](%s) %d", event.Project.Name, event.Project.WebURL, event.Project.ID)
+			message = fmt.Sprintf("%s\n----------\n[%s](%s)", message, event.ObjectAttributes.Title, event.ObjectAttributes.URL)
+			message = fmt.Sprintf("%s\n\n🌳: %s -> %s", message, event.ObjectAttributes.SourceBranch, event.ObjectAttributes.TargetBranch)
+			message = fmt.Sprintf("%s\n🧙: [%s](%s/%s)", message, event.User.Name, os.Getenv("GITLAB_URL"), event.User.Username)
+			telegram.SendMessage(&subscribe.TelegramChannel, message)
 		}
 	case *gitlab.PipelineEvent:
 		subscribes := database.GetSubscribesByProjectIdAndKind(event.Project.ID, event.ObjectKind)

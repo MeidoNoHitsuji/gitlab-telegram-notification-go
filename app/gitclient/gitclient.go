@@ -20,7 +20,7 @@ func New(GitlabToken string, GitlabUrl string) *gitlab.Client {
 
 func Instant() *gitlab.Client {
 	if instant == nil {
-		instant = New(os.Getenv("GITLAB_TOKEN"), os.Getenv("GITLAB_URL"))
+		instant = New(os.Getenv("GITLAB_TOKEN"), os.Getenv("GITLAB_API_URL"))
 	}
 
 	return instant

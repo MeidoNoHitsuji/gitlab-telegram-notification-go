@@ -60,6 +60,8 @@ func main() {
 			continue
 		}
 
+		database.UpdateMemberStatus(update.Message.Chat.ID, update.Message.From.UserName, false)
+
 		switch update.Message.Command() {
 		case "subscribe":
 			text, _, err := command.Subscribe(update.Message.Chat.ID, update.Message.CommandArguments())
@@ -70,7 +72,6 @@ func main() {
 			}
 			break
 		case "start":
-			database.UpdateMemberStatus(update.Message.Chat.ID, update.Message.From.UserName, false)
 			telegram.SendMessageById(update.Message.Chat.ID, "Привет! Мой список команд доступен тебе через `/`.")
 			break
 		default:

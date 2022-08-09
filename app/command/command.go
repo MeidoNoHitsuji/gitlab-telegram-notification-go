@@ -50,6 +50,9 @@ func Subscribe(telegramId int64, arguments string) (string, *gitlab.Project, err
 		}
 	}
 
+	allowArgs = append(allowArgs, database.GetEventsByProjectId(project.ID)...)
+	allowArgs = helper.Unique(allowArgs)
+
 	// TODO: Добавить новые хуки и вынести их в клавиатуру
 	text, err := gitclient.Subscribe(project, gitlab.AddProjectHookOptions{
 		PushEvents:          gitlab.Bool(helper.Contains(allowArgs, helper.Slugify(string(gitlab.EventTypePush)))),
