@@ -106,7 +106,7 @@ func Handler(event interface{}) error {
 		if event.MergeRequest.ID != 0 {
 			message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, event.MergeRequest.Title, event.Project.WebURL, event.ObjectAttributes.ID)
 		} else {
-			messages := strings.Split(event.Commit.Message, "\\n")
+			messages := strings.Split(event.Commit.Message, "\n")
 
 			if len(messages) > 0 {
 				message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, messages[0], event.Project.WebURL, event.ObjectAttributes.ID)
