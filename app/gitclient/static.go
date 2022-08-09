@@ -81,18 +81,62 @@ func Handler(event interface{}) error {
 	case *gitlab.MergeEvent:
 		subscribes := database.GetSubscribesByProjectIdAndKind(event.Project.ID, event.ObjectKind)
 
+		message := fmt.Sprintf("🎭 Создан новый MergeRequest! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
+		message = fmt.Sprintf("%s\n—————\n[%s](%s)", message, event.ObjectAttributes.Title, event.ObjectAttributes.URL)
+		message = fmt.Sprintf("%s\n\n🌳: %s 🡲 %s", message, event.ObjectAttributes.SourceBranch, event.ObjectAttributes.TargetBranch)
+		message = fmt.Sprintf("%s\n🧙: [%s](%s/%s)", message, event.User.Name, os.Getenv("GITLAB_URL"), event.User.Username)
+
 		for _, subscribe := range subscribes {
-			message := fmt.Sprintf("🎭 Создан новый MergeRequest! | [%s](%s) %d", event.Project.Name, event.Project.WebURL, event.Project.ID)
-			message = fmt.Sprintf("%s\n----------\n[%s](%s)", message, event.ObjectAttributes.Title, event.ObjectAttributes.URL)
-			message = fmt.Sprintf("%s\n\n🌳: %s -> %s", message, event.ObjectAttributes.SourceBranch, event.ObjectAttributes.TargetBranch)
-			message = fmt.Sprintf("%s\n🧙: [%s](%s/%s)", message, event.User.Name, os.Getenv("GITLAB_URL"), event.User.Username)
 			telegram.SendMessage(&subscribe.TelegramChannel, message)
 		}
 	case *gitlab.PipelineEvent:
 		subscribes := database.GetSubscribesByProjectIdAndKind(event.Project.ID, event.ObjectKind)
+		var message string
+		if event.ObjectAttributes.Status == "failed" {
+			message = fmt.Sprintf("❌ PipeLine завершился ошибкой! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
+			message = fmt.Sprintf("%s\n—————", message)
+		} else if event.ObjectAttributes.Status == "success" {
+			message = fmt.Sprintf("✅ PipeLine завершился успешно! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
+			message = fmt.Sprintf("%s\n—————", message)
+		} else {
+			break
+		}
+
+		if event.MergeRequest.ID != 0 {
+			message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, event.MergeRequest.Title, event.Project.WebURL, event.ObjectAttributes.ID)
+		} else {
+			message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, event.Commit.Message, event.Project.WebURL, event.ObjectAttributes.ID)
+		}
+
+		message = fmt.Sprintf("%s\nСборочная линия:", message)
+
+		for _, stage := range event.ObjectAttributes.Stages {
+			for _, build := range event.Builds {
+				if build.Stage == stage {
+					if build.Status == "failed" {
+						message = fmt.Sprintf("%s\n❌ [%s](%s/-/jobs/%d)", message, build.Name, event.Project.WebURL, build.ID)
+					} else if build.Status == "skipped" {
+						message = fmt.Sprintf("%s\n⏩ [%s](%s/-/jobs/%d)", message, build.Name, event.Project.WebURL, build.ID)
+					} else if build.Status == "success" {
+						message = fmt.Sprintf("%s\n✅ [%s](%s/-/jobs/%d)", message, build.Name, event.Project.WebURL, build.ID)
+					} else {
+						message = fmt.Sprintf("%s\n❓ [%s](%s/-/jobs/%d)", message, build.Name, event.Project.WebURL, build.ID)
+					}
+
+				}
+			}
+		}
+
+		message = fmt.Sprintf("%s\n", message)
+
+		if event.MergeRequest.ID != 0 {
+			message = fmt.Sprintf("%s\n🌳: %s 🡲 %s", message, event.MergeRequest.SourceBranch, event.MergeRequest.TargetBranch)
+		}
+
+		message = fmt.Sprintf("%s\n🧙: [%s](%s/%s)", message, event.User.Name, os.Getenv("GITLAB_URL"), event.User.Username)
 
 		for _, subscribe := range subscribes {
-			telegram.SendMessage(&subscribe.TelegramChannel, "Закончился новый PipeLine!")
+			telegram.SendMessage(&subscribe.TelegramChannel, message)
 		}
 	}
 	return nil

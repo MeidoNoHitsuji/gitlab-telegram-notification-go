@@ -43,6 +43,8 @@ func UpdateChatStatus(telegramId int64, isDeleted bool) *models.TelegramChannel 
 func UpdateSubscribes(project gitlab.Project, telegramId int64, events ...string) error {
 	db := Instant()
 
+	events = helper.Unique(events)
+
 	projectObj := models.Project{
 		ID: project.ID,
 	}
