@@ -6,6 +6,7 @@ import (
 	"gitlab-telegram-notification-go/database"
 	"gitlab-telegram-notification-go/telegram"
 	"os"
+	"strings"
 )
 
 func Subscribe(project *gitlab.Project, hookOptions gitlab.AddProjectHookOptions) (string, error) {
@@ -105,7 +106,13 @@ func Handler(event interface{}) error {
 		if event.MergeRequest.ID != 0 {
 			message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, event.MergeRequest.Title, event.Project.WebURL, event.ObjectAttributes.ID)
 		} else {
-			message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, event.Commit.Message, event.Project.WebURL, event.ObjectAttributes.ID)
+			messages := strings.Split(event.Commit.Message, "\\n")
+
+			if len(messages) > 0 {
+				message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, messages[0], event.Project.WebURL, event.ObjectAttributes.ID)
+			} else {
+				message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, event.Commit.Message, event.Project.WebURL, event.ObjectAttributes.ID)
+			}
 		}
 
 		message = fmt.Sprintf("%s\nСборочная линия:", message)
@@ -122,7 +129,6 @@ func Handler(event interface{}) error {
 					} else {
 						message = fmt.Sprintf("%s\n❓ [%s](%s/-/jobs/%d)", message, build.Name, event.Project.WebURL, build.ID)
 					}
-
 				}
 			}
 		}
