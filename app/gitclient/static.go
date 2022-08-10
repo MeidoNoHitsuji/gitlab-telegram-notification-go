@@ -137,6 +137,8 @@ func Handler(event interface{}) error {
 
 		if event.MergeRequest.ID != 0 {
 			message = fmt.Sprintf("%s\n🌳: %s 🡲 %s", message, event.MergeRequest.SourceBranch, event.MergeRequest.TargetBranch)
+		} else {
+			message = fmt.Sprintf("%s\n🌳: %s", message, event.ObjectAttributes.Ref)
 		}
 
 		message = fmt.Sprintf("%s\n🧙: [%s](%s/%s)", message, event.User.Name, os.Getenv("GITLAB_URL"), event.User.Username)
