@@ -50,8 +50,11 @@ func Subscribe(telegramId int64, arguments string) (string, *gitlab.Project, err
 		}
 	}
 
-	allEvents := append(allowArgs, database.GetEventsByProjectId(project.ID)...)
-	allEvents = helper.Unique(allEvents)
+	if err := database.UpdateSubscribes(*project, telegramId, allowArgs...); err != nil {
+		return "", nil, err
+	}
+
+	allEvents := database.GetEventsByProjectId(project.ID)
 
 	// TODO: Добавить новые хуки и вынести их в клавиатуру
 	text, err := gitclient.Subscribe(project, gitlab.AddProjectHookOptions{
@@ -60,10 +63,6 @@ func Subscribe(telegramId int64, arguments string) (string, *gitlab.Project, err
 		MergeRequestsEvents: gitlab.Bool(helper.Contains(allEvents, helper.Slugify(string(gitlab.EventTypeMergeRequest)))),
 	})
 	if err != nil {
-		return "", nil, err
-	}
-
-	if err := database.UpdateSubscribes(*project, telegramId, allowArgs...); err != nil {
 		return "", nil, err
 	}
 
