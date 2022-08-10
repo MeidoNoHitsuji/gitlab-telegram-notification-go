@@ -81,10 +81,20 @@ func Handler(event interface{}) error {
 	switch event := event.(type) {
 	case *gitlab.MergeEvent:
 		subscribes := database.GetSubscribesByProjectIdAndKind(event.Project.ID, event.ObjectKind)
+		var message string
 
-		message := fmt.Sprintf("🎭 Создан новый MergeRequest! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
+		if event.ObjectAttributes.MergeStatus == "unchecked" {
+			message = fmt.Sprintf("🎭⚠ Необходимо проверить MergeRequest! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
+		} else if event.ObjectAttributes.MergeStatus == "cannot_be_merged" {
+			message = fmt.Sprintf("🎭❌ Обнаружены ошибки в MergeRequest! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
+		} else if event.ObjectAttributes.MergeStatus == "can_be_merged" {
+			message = fmt.Sprintf("🎭✅ Был завершён MergeRequest! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
+		} else {
+			break
+		}
+
 		message = fmt.Sprintf("%s\n—————\n[%s](%s)", message, event.ObjectAttributes.Title, event.ObjectAttributes.URL)
-		message = fmt.Sprintf("%s\n\n🌳: %s 🡲 %s", message, event.ObjectAttributes.SourceBranch, event.ObjectAttributes.TargetBranch)
+		message = fmt.Sprintf("%s\n\n🌳: %s → %s", message, event.ObjectAttributes.SourceBranch, event.ObjectAttributes.TargetBranch)
 		message = fmt.Sprintf("%s\n🧙: [%s](%s/%s)", message, event.User.Name, os.Getenv("GITLAB_URL"), event.User.Username)
 
 		for _, subscribe := range subscribes {
@@ -94,10 +104,10 @@ func Handler(event interface{}) error {
 		subscribes := database.GetSubscribesByProjectIdAndKind(event.Project.ID, event.ObjectKind)
 		var message string
 		if event.ObjectAttributes.Status == "failed" {
-			message = fmt.Sprintf("❌ PipeLine завершился ошибкой! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
+			message = fmt.Sprintf("🧩❌ PipeLine завершился ошибкой! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
 			message = fmt.Sprintf("%s\n—————", message)
 		} else if event.ObjectAttributes.Status == "success" {
-			message = fmt.Sprintf("✅ PipeLine завершился успешно! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
+			message = fmt.Sprintf("🧩✅ PipeLine завершился успешно! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
 			message = fmt.Sprintf("%s\n—————", message)
 		} else {
 			break
@@ -136,7 +146,7 @@ func Handler(event interface{}) error {
 		message = fmt.Sprintf("%s\n", message)
 
 		if event.MergeRequest.ID != 0 {
-			message = fmt.Sprintf("%s\n🌳: %s 🡲 %s", message, event.MergeRequest.SourceBranch, event.MergeRequest.TargetBranch)
+			message = fmt.Sprintf("%s\n🌳: %s → %s", message, event.MergeRequest.SourceBranch, event.MergeRequest.TargetBranch)
 		} else {
 			message = fmt.Sprintf("%s\n🌳: %s", message, event.ObjectAttributes.Ref)
 		}
