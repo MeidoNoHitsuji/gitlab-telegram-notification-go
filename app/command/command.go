@@ -41,6 +41,10 @@ func Subscribe(telegramId int64, arguments string) (string, *gitlab.Project, err
 
 	project, args, err := getProjectFromArguments(arguments)
 
+	if err != nil {
+		return "", nil, err
+	}
+
 	var allowArgs []string
 	allowEvents := helper.AllowEvents()
 
