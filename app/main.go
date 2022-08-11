@@ -52,31 +52,53 @@ func main() {
 			}
 		}
 
-		if update.Message == nil {
-			continue
-		}
+		if update.Message != nil {
 
-		if !update.Message.IsCommand() {
-			continue
-		}
+			database.UpdateMemberStatus(update.Message.Chat.ID, update.Message.From.UserName, false)
 
-		database.UpdateMemberStatus(update.Message.Chat.ID, update.Message.From.UserName, false)
-
-		switch update.Message.Command() {
-		case "subscribe":
-			text, _, err := command.Subscribe(update.Message.Chat.ID, update.Message.CommandArguments())
-			if err == nil {
-				telegram.SendMessageById(update.Message.Chat.ID, text)
+			if update.Message.IsCommand() {
+				switch update.Message.Command() {
+				case "subscribe":
+					text, _, err := command.Subscribe(update.Message.Chat.ID, update.Message.CommandArguments())
+					if err == nil {
+						telegram.SendMessageById(update.Message.Chat.ID, text, nil)
+					} else {
+						telegram.SendMessageById(update.Message.Chat.ID, fmt.Sprintf("Ошибка! Не удалось подписаться по причине: %s", err), nil)
+					}
+					break
+				case "start":
+					telegram.SendMessageById(update.Message.Chat.ID, "Привет! Мой список команд доступен тебе через `/`.", nil)
+					break
+				case "test":
+					ids := []int64{update.Message.Chat.ID}
+					if update.Message.From.ID != update.Message.Chat.ID {
+						ids = append(ids, update.Message.From.ID)
+					}
+					command.Test(ids...)
+					break
+				default:
+					telegram.SendMessageById(update.Message.Chat.ID, "Я не понимаю, что ты от меня хочешь.", nil)
+					break
+				}
 			} else {
-				telegram.SendMessageById(update.Message.Chat.ID, fmt.Sprintf("Ошибка! Не удалось подписаться по причине: %s", err))
+				switch update.Message.Text {
+				default:
+					//update.Message.ReplyToMessage
+					break
+				}
 			}
-			break
-		case "start":
-			telegram.SendMessageById(update.Message.Chat.ID, "Привет! Мой список команд доступен тебе через `/`.")
-			break
-		default:
-			telegram.SendMessageById(update.Message.Chat.ID, "Я не понимаю, что ты от меня хочешь.")
-			break
+
+		} else if update.CallbackQuery != nil {
+
+			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
+			if _, err := bot.Request(callback); err != nil {
+				panic(err)
+			}
+
+			msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Data)
+			if _, err := bot.Send(msg); err != nil {
+				panic(err)
+			}
 		}
 	}
 }

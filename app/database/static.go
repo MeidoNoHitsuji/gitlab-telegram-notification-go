@@ -100,6 +100,18 @@ func GetSubscribesByProjectIdAndKind(projectId int, objectKind string) []models.
 	return subscribes
 }
 
+func GetProjectsByTelegramIds(telegramIds ...int64) []models.Project {
+	var projects []models.Project
+	db := Instant()
+
+	builder := db.Model(&models.Project{}).Joins("inner join subscribes as subscribe on subscribe.project_id = projects.id")
+	builder = builder.Where("subscribe.telegram_channel_id in ?", telegramIds)
+	builder = builder.Order("subscribe.updated_at desc").Limit(9)
+	builder = builder.Find(&projects)
+
+	return projects
+}
+
 func GetEventsByProjectId(projectId int) []string {
 	var subscribes []models.Subscribe
 	var events []string

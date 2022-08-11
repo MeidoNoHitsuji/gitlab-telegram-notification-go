@@ -9,7 +9,7 @@ import (
 	"log"
 )
 
-func SendMessage(channel *models.TelegramChannel, message string) (*tgbotapi.Message, error) {
+func SendMessage(channel *models.TelegramChannel, message string, keyboard interface{}) (*tgbotapi.Message, error) {
 	bot := Instant()
 
 	if !channel.Active {
@@ -21,6 +21,9 @@ func SendMessage(channel *models.TelegramChannel, message string) (*tgbotapi.Mes
 	msgConf := tgbotapi.NewMessage(channel.ID, message)
 	msgConf.ParseMode = tgbotapi.ModeMarkdown
 	msgConf.DisableWebPagePreview = true
+	if keyboard != nil {
+		msgConf.ReplyMarkup = keyboard
+	}
 	msg, err := bot.Send(msgConf)
 
 	if err != nil {
@@ -31,7 +34,7 @@ func SendMessage(channel *models.TelegramChannel, message string) (*tgbotapi.Mes
 	return &msg, nil
 }
 
-func SendMessageById(telegramId int64, message string) (*tgbotapi.Message, error) {
+func SendMessageById(telegramId int64, message string, keyboard interface{}) (*tgbotapi.Message, error) {
 	db := database.Instant()
 
 	var channel models.TelegramChannel
@@ -50,10 +53,10 @@ func SendMessageById(telegramId int64, message string) (*tgbotapi.Message, error
 		return nil, errors.New(err)
 	}
 
-	return SendMessage(&channel, message)
+	return SendMessage(&channel, message, keyboard)
 }
 
-func SendMessageByUsername(username string, message string) (*tgbotapi.Message, error) {
+func SendMessageByUsername(username string, message string, keyboard interface{}) (*tgbotapi.Message, error) {
 	db := database.Instant()
 
 	var user models.User
@@ -71,5 +74,5 @@ func SendMessageByUsername(username string, message string) (*tgbotapi.Message, 
 		return nil, errors.New(err)
 	}
 
-	return SendMessage(&user.TelegramChannel, message)
+	return SendMessage(&user.TelegramChannel, message, keyboard)
 }
