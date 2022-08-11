@@ -83,7 +83,11 @@ func main() {
 			} else {
 				switch update.Message.Text {
 				default:
-					//update.Message.ReplyToMessage
+					if update.Message.ReplyToMessage != nil {
+						fmt.Println(1, update.Message.ReplyToMessage, update.Message.ReplyToMessage.ReplyMarkup, update.Message.ReplyMarkup, 2)
+					} else {
+						fmt.Println(3, update.Message.ReplyMarkup, 4)
+					}
 					break
 				}
 			}

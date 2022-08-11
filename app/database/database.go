@@ -31,6 +31,7 @@ func New() *gorm.DB {
 		&models.Project{},
 		&models.Subscribe{},
 		&models.SubscribeEvent{},
+		&models.UserTelegramChannelAction{},
 	}
 
 	if err = db.AutoMigrate(ms...); err != nil {

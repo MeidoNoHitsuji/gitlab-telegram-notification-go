@@ -106,7 +106,7 @@ func GetProjectsByTelegramIds(telegramIds ...int64) []models.Project {
 
 	builder := db.Model(&models.Project{}).Joins("inner join subscribes as subscribe on subscribe.project_id = projects.id")
 	builder = builder.Where("subscribe.telegram_channel_id in ?", telegramIds)
-	builder = builder.Order("subscribe.updated_at desc").Limit(9)
+	builder = builder.Group("projects.id").Limit(9)
 	builder = builder.Find(&projects)
 
 	return projects

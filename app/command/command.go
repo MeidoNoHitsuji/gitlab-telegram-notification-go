@@ -88,7 +88,7 @@ func Test(telegramId ...int64) {
 	}
 
 	for i := 0; i < lines; i++ {
-		pr := projects[i*3 : ((i+1)*3)-1]
+		pr := projects[i*3 : ((i + 1) * 3)]
 		var keyboardButtons []tgbotapi.KeyboardButton
 		for j := 0; j < len(pr); j++ {
 			keyboardButtons = append(keyboardButtons, tgbotapi.NewKeyboardButton(pr[j].Name))
