@@ -100,5 +100,5 @@ func Test(telegramId ...int64) {
 		tgbotapi.NewKeyboardButton("Отмена"),
 	))
 
-	telegram.SendMessageById(senderId, "Это какая-то хуита?", tgbotapi.NewReplyKeyboard(keyboard...))
+	telegram.SendMessageById(senderId, "Это какая-то хуита?", tgbotapi.NewReplyKeyboard(keyboard...), nil)
 }

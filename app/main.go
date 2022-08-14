@@ -61,13 +61,13 @@ func main() {
 				case "subscribe":
 					text, _, err := command.Subscribe(update.Message.Chat.ID, update.Message.CommandArguments())
 					if err == nil {
-						telegram.SendMessageById(update.Message.Chat.ID, text, nil)
+						telegram.SendMessageById(update.Message.Chat.ID, text, nil, nil)
 					} else {
-						telegram.SendMessageById(update.Message.Chat.ID, fmt.Sprintf("Ошибка! Не удалось подписаться по причине: %s", err), nil)
+						telegram.SendMessageById(update.Message.Chat.ID, fmt.Sprintf("Ошибка! Не удалось подписаться по причине: %s", err), nil, nil)
 					}
 					break
 				case "start":
-					telegram.SendMessageById(update.Message.Chat.ID, "Привет! Мой список команд доступен тебе через `/`.", nil)
+					telegram.SendMessageById(update.Message.Chat.ID, "Привет! Мой список команд доступен тебе через `/`.", nil, nil)
 					break
 				case "test":
 					ids := []int64{update.Message.Chat.ID}
@@ -77,17 +77,18 @@ func main() {
 					command.Test(ids...)
 					break
 				default:
-					telegram.SendMessageById(update.Message.Chat.ID, "Я не понимаю, что ты от меня хочешь.", nil)
+					telegram.SendMessageById(update.Message.Chat.ID, "Я не понимаю, что ты от меня хочешь.", nil, nil)
 					break
 				}
 			} else {
 				switch update.Message.Text {
 				default:
-					if update.Message.ReplyToMessage != nil {
-						fmt.Println(1, update.Message.ReplyToMessage, update.Message.ReplyToMessage.ReplyMarkup, update.Message.ReplyMarkup, 2)
-					} else {
-						fmt.Println(3, update.Message.ReplyMarkup, 4)
-					}
+					telegram.SendMessageById(update.Message.Chat.ID, update.Message.Text, nil, update.Message.Entities)
+					//if update.Message.ReplyToMessage != nil {
+					//	fmt.Println(1, update.Message.ReplyToMessage, update.Message.ReplyToMessage.ReplyMarkup, update.Message.ReplyMarkup, 2)
+					//} else {
+					//	fmt.Println(3, update.Message.ReplyMarkup, 4)
+					//}
 					break
 				}
 			}

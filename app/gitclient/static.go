@@ -102,7 +102,7 @@ func Handler(event interface{}) error {
 		message = fmt.Sprintf("%s\n🧙: [%s](%s/%s)", message, event.User.Name, os.Getenv("GITLAB_URL"), event.User.Username)
 
 		for _, subscribe := range subscribes {
-			telegram.SendMessage(&subscribe.TelegramChannel, message, nil)
+			telegram.SendMessage(&subscribe.TelegramChannel, message, nil, nil)
 		}
 	case *gitlab.PipelineEvent:
 		subscribes := database.GetSubscribesByProjectIdAndKind(event.Project.ID, event.ObjectKind)
@@ -160,7 +160,7 @@ func Handler(event interface{}) error {
 		message = fmt.Sprintf("%s\n🧙: [%s](%s/%s)", message, event.User.Name, os.Getenv("GITLAB_URL"), event.User.Username)
 
 		for _, subscribe := range subscribes {
-			telegram.SendMessage(&subscribe.TelegramChannel, message, nil)
+			telegram.SendMessage(&subscribe.TelegramChannel, message, nil, nil)
 		}
 	}
 	return nil
