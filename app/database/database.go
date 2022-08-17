@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"gitlab-telegram-notification-go/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"os"
@@ -23,18 +22,6 @@ func New() *gorm.DB {
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
-	}
-
-	ms := []interface{}{
-		&models.TelegramChannel{},
-		&models.User{},
-		&models.Project{},
-		&models.Subscribe{},
-		&models.SubscribeEvent{},
-	}
-
-	if err = db.AutoMigrate(ms...); err != nil {
-		return nil
 	}
 
 	return db
