@@ -125,19 +125,31 @@ func Handler(event interface{}) error {
 			}
 		}
 
-		message = fmt.Sprintf("%s\nСборочная линия:", message)
+		if event.ObjectAttributes.Status == "success" && event.ObjectAttributes.Ref == "develop" {
+			message = fmt.Sprintf("%s\nЗалитые изменения:", message)
+			commits, err := GetCommitsLastPipeline(event.Project.ID, event.ObjectAttributes.BeforeSHA, event.ObjectAttributes.SHA)
+			if err != nil {
+				return err
+			}
 
-		for _, stage := range event.ObjectAttributes.Stages {
-			for _, build := range event.Builds {
-				if build.Stage == stage {
-					if build.Status == "failed" {
-						message = fmt.Sprintf("%s\n❌ [%s](%s/-/jobs/%d)", message, build.Name, event.Project.WebURL, build.ID)
-					} else if build.Status == "skipped" {
-						message = fmt.Sprintf("%s\n⏩ [%s](%s/-/jobs/%d)", message, build.Name, event.Project.WebURL, build.ID)
-					} else if build.Status == "success" {
-						message = fmt.Sprintf("%s\n✅ [%s](%s/-/jobs/%d)", message, build.Name, event.Project.WebURL, build.ID)
-					} else {
-						message = fmt.Sprintf("%s\n❓ [%s](%s/-/jobs/%d)", message, build.Name, event.Project.WebURL, build.ID)
+			for _, commit := range commits {
+				message = fmt.Sprintf("%s\n📄 [%s](%s):", message, commit.Title, commit.WebURL)
+			}
+		} else {
+			message = fmt.Sprintf("%s\nСборочная линия:", message)
+
+			for _, stage := range event.ObjectAttributes.Stages {
+				for _, build := range event.Builds {
+					if build.Stage == stage {
+						if build.Status == "failed" {
+							message = fmt.Sprintf("%s\n❌ [%s](%s/-/jobs/%d)", message, build.Name, event.Project.WebURL, build.ID)
+						} else if build.Status == "skipped" {
+							message = fmt.Sprintf("%s\n⏩ [%s](%s/-/jobs/%d)", message, build.Name, event.Project.WebURL, build.ID)
+						} else if build.Status == "success" {
+							message = fmt.Sprintf("%s\n✅ [%s](%s/-/jobs/%d)", message, build.Name, event.Project.WebURL, build.ID)
+						} else {
+							message = fmt.Sprintf("%s\n❓ [%s](%s/-/jobs/%d)", message, build.Name, event.Project.WebURL, build.ID)
+						}
 					}
 				}
 			}
@@ -158,4 +170,19 @@ func Handler(event interface{}) error {
 		}
 	}
 	return nil
+}
+
+func GetCommitsLastPipeline(projectId int, fromHash string, toHash string) ([]*gitlab.Commit, error) {
+	git := Instant()
+
+	compare, _, err := git.Repositories.Compare(projectId, &gitlab.CompareOptions{
+		From: gitlab.String(fromHash),
+		To:   gitlab.String(toHash),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return compare.Commits, nil
 }
