@@ -133,7 +133,10 @@ func Handler(event interface{}) error {
 			}
 
 			for _, commit := range commits {
-				message = fmt.Sprintf("%s\n📄 [%s](%s):", message, commit.Title, commit.WebURL)
+				if len(commit.ParentIDs) > 1 {
+					continue
+				}
+				message = fmt.Sprintf("%s\n📄 [%s](%s)", message, commit.Title, commit.WebURL)
 			}
 		} else {
 			message = fmt.Sprintf("%s\nСборочная линия:", message)
