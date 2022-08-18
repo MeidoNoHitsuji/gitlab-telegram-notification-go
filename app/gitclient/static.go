@@ -84,7 +84,13 @@ func Subscribe(project *gitlab.Project, hookOptions gitlab.AddProjectHookOptions
 func Handler(event interface{}) error {
 	switch event := event.(type) {
 	case *gitlab.MergeEvent:
-		subscribes := database.GetSubscribesByProjectIdAndKind(event.Project.ID, event.ObjectKind)
+		subscribes := database.GetSubscribesByProjectIdAndKind(database.GetSubscribesFilter{
+			ProjectId:      event.Project.ID,
+			Event:          event.ObjectKind,
+			Status:         event.ObjectAttributes.State,
+			AuthorUsername: event.User.Username,
+			BranchName:     event.ObjectAttributes.TargetBranch,
+		})
 		var message string
 
 		if event.ObjectAttributes.MergeStatus == "unchecked" {
@@ -105,7 +111,14 @@ func Handler(event interface{}) error {
 			telegram.SendMessage(&subscribe.TelegramChannel, message, nil, nil)
 		}
 	case *gitlab.PipelineEvent:
-		subscribes := database.GetSubscribesByProjectIdAndKind(event.Project.ID, event.ObjectKind)
+		subscribes := database.GetSubscribesByProjectIdAndKind(database.GetSubscribesFilter{
+			ProjectId:      event.Project.ID,
+			Event:          event.ObjectKind,
+			Status:         event.ObjectAttributes.Status,
+			AuthorUsername: event.User.Username,
+			BranchName:     event.ObjectAttributes.Ref,
+		})
+
 		var message string
 		if event.ObjectAttributes.Status == "failed" {
 			message = fmt.Sprintf("🧩❌ PipeLine завершился ошибкой! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
@@ -163,8 +176,6 @@ func Handler(event interface{}) error {
 				}
 			}
 		}
-
-		
 
 		message = fmt.Sprintf("%s\n", message)
 

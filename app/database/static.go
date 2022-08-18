@@ -89,12 +89,35 @@ func UpdateSubscribes(project gitlab.Project, telegramId int64, events ...string
 	return nil
 }
 
-func GetSubscribesByProjectIdAndKind(projectId int, objectKind string) []models.Subscribe {
+func GetSubscribesByProjectIdAndKind(filter GetSubscribesFilter) []models.Subscribe {
 	var subscribes []models.Subscribe
 	db := Instant()
 
 	builder := db.Model(&models.Subscribe{}).Preload("TelegramChannel").Joins("inner join subscribe_events as event on event.subscribe_id = subscribes.id")
-	builder = builder.Where("subscribes.project_id = ? and event.event = ?", projectId, objectKind)
+
+	if filter.ProjectId != 0 {
+		builder = builder.Where("subscribes.project_id = ?", filter.ProjectId)
+	}
+
+	if filter.Event != "" {
+		builder = builder.Where("event.event = ?", filter.Event)
+	}
+
+	if filter.Status != "" {
+		p := "JSON_EXTRACT(event.parameters, '$[*].status')"
+		builder = builder.Where(fmt.Sprintf("(%s is null or %s = '' or %s = ?)", p, p, p), filter.Status)
+	}
+
+	if filter.AuthorUsername != "" {
+		p := "JSON_EXTRACT(event.parameters, '$[*].author_username')"
+		builder = builder.Where(fmt.Sprintf("(%s is null or %s = '' or %s = ?)", p, p, p), filter.AuthorUsername)
+	}
+
+	if filter.BranchName != "" {
+		p := "JSON_EXTRACT(event.parameters, '$[*].branch_name')"
+		builder = builder.Where(fmt.Sprintf("(%s is null or %s = '' or %s = ?)", p, p, p), filter.BranchName)
+	}
+
 	builder = builder.Find(&subscribes)
 
 	return subscribes
