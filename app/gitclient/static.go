@@ -22,7 +22,7 @@ func Subscribe(project *gitlab.Project, hookOptions gitlab.AddProjectHookOptions
 		return "", err
 	}
 
-	webhookUrl := fmt.Sprintf("%s:%s/%s", os.Getenv("WEBHOOK_DOMAIN"), os.Getenv("WEBHOOK_PORT"), os.Getenv("WEBHOOK_URL"))
+	webhookUrl := fmt.Sprintf("%s/%s", os.Getenv("WEBHOOK_DOMAIN"), os.Getenv("WEBHOOK_URL"))
 
 	hook := gitlab.ProjectHook{
 		ID: 0,
