@@ -139,8 +139,6 @@ func (t *PipelineLogType) Make() string {
 		return ""
 	}
 
-	message = fmt.Sprintf("%s\n", message)
-
 	commits := map[string]map[string][]map[string]interface{}{}
 
 	for _, commit := range t.Commits {
@@ -207,11 +205,11 @@ func (t *PipelineLogType) Make() string {
 			continue
 		}
 
-		subMessage := fmt.Sprintf("*%s*:\n", v)
+		subMessage := fmt.Sprintf("\n*%s*:", v)
 		for scopeKey, dataCommits := range data {
-			subMessage = fmt.Sprintf("%s    __%s__:\n", subMessage, cases.Title(language.Und).String(scopeKey))
+			subMessage = fmt.Sprintf("\n%s    __%s__:", subMessage, cases.Title(language.Und).String(scopeKey))
 			for _, commit := range dataCommits {
-				subMessage = fmt.Sprintf("%s        📄_[%s](%s)_", subMessage, commit["description"], tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, commit["url"].(string)))
+				subMessage = fmt.Sprintf("\n%s        📄_[%s](%s)_", subMessage, commit["description"], tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, commit["url"].(string)))
 
 				jiraDomain := os.Getenv("JIRA_DOMAIN")
 
@@ -228,11 +226,9 @@ func (t *PipelineLogType) Make() string {
 						subMessage = fmt.Sprintf("%s \\(%s\\)", subMessage, strings.Join(jiraMessage, ", "))
 					}
 				}
-
-				subMessage = fmt.Sprintf("%s\n", subMessage)
 			}
 		}
-		message = fmt.Sprintf("%s%s\n", message, subMessage)
+		message = fmt.Sprintf("%s%s", message, subMessage)
 	}
 
 	return fmt.Sprintf("%s\n%s", message, t.Footer())
