@@ -2,6 +2,7 @@ package gitclient
 
 import (
 	"fmt"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/database"
 	"gitlab-telegram-notification-go/telegram"
@@ -55,7 +56,7 @@ func Subscribe(project *gitlab.Project, hookOptions gitlab.AddProjectHookOptions
 			}
 		}
 
-		text = fmt.Sprintf("📝 | Подписка на проект [%s](%s) (%d) была добавлена.", project.Name, project.WebURL, project.ID)
+		text = fmt.Sprintf("📝 \\| Подписка на проект [%s](%s) \\(%d\\) была добавлена.", tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, project.Name), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, project.WebURL), project.ID)
 	} else {
 		if os.Getenv("WEBHOOK_TEST") != "true" {
 			_, _, err := git.Projects.EditProjectHook(project.ID, hook.ID, &gitlab.EditProjectHookOptions{
@@ -82,7 +83,7 @@ func Subscribe(project *gitlab.Project, hookOptions gitlab.AddProjectHookOptions
 			}
 		}
 
-		text = fmt.Sprintf("📝 | Подписка на проект [%s](%s) (%d) была обновлена.", project.Name, project.WebURL, project.ID)
+		text = fmt.Sprintf("📝 \\| Подписка на проект [%s](%s) \\(%d\\) была обновлена.", tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, project.Name), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, project.WebURL), project.ID)
 	}
 
 	return text, nil
