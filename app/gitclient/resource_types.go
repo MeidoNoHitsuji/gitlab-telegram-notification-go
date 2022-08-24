@@ -37,10 +37,10 @@ type PipelineDefaultType struct {
 func (t PipelineDefaultType) Header() (string, error) {
 	var message string
 	if t.Event.ObjectAttributes.Status == "failed" {
-		message = fmt.Sprintf("🧩❌ PipeLine завершился ошибкой\\! \\| [%s](%s) (%d)", t.Event.Project.Name, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.WebURL), t.Event.Project.ID)
+		message = fmt.Sprintf("🧩❌ PipeLine завершился ошибкой\\! \\| [%s](%s) (%d)", tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.Name), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.WebURL), t.Event.Project.ID)
 		message = fmt.Sprintf("%s\n—————", message)
 	} else if t.Event.ObjectAttributes.Status == "success" {
-		message = fmt.Sprintf("🧩✅ PipeLine завершился успешно\\! \\| [%s](%s) (%d)", t.Event.Project.Name, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.WebURL), t.Event.Project.ID)
+		message = fmt.Sprintf("🧩✅ PipeLine завершился успешно\\! \\| [%s](%s) (%d)", tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.Name), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.WebURL), t.Event.Project.ID)
 		message = fmt.Sprintf("%s\n—————", message)
 	} else {
 		return "", errors.New("Такой статус пайплайна не поддерживается\\.")
@@ -65,13 +65,13 @@ func (t PipelineDefaultType) Header() (string, error) {
 func (t PipelineDefaultType) Footer() string {
 	var message string
 	if t.Event.MergeRequest.ID != 0 {
-		message = fmt.Sprintf("\n🌳: %s → %s", t.Event.MergeRequest.SourceBranch, t.Event.MergeRequest.TargetBranch)
+		message = fmt.Sprintf("\n🌳: %s → %s", tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.MergeRequest.SourceBranch), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.MergeRequest.TargetBranch))
 	} else {
-		message = fmt.Sprintf("\n🌳: %s", t.Event.ObjectAttributes.Ref)
+		message = fmt.Sprintf("\n🌳: %s", tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.ObjectAttributes.Ref))
 	}
 
 	url := tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, fmt.Sprintf("%s/%s", os.Getenv("GITLAB_URL"), t.Event.User.Username))
-	message = fmt.Sprintf("%s\n🧙: [%s](%s)", message, t.Event.User.Name, url)
+	message = fmt.Sprintf("%s\n🧙: [%s](%s)", message, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.User.Name), url)
 
 	return message
 }
@@ -246,19 +246,19 @@ type MergeDefaultType struct {
 func (t *MergeDefaultType) Make() string {
 	var message string
 	if t.Event.ObjectAttributes.MergeStatus == "unchecked" {
-		message = fmt.Sprintf("🎭⚠ Необходимо проверить MergeRequest\\! \\| [%s](%s) (%d)", t.Event.Project.Name, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.WebURL), t.Event.Project.ID)
+		message = fmt.Sprintf("🎭⚠ Необходимо проверить MergeRequest\\! \\| [%s](%s) (%d)", tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.Name), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.WebURL), t.Event.Project.ID)
 	} else if t.Event.ObjectAttributes.MergeStatus == "cannot_be_merged" {
-		message = fmt.Sprintf("🎭❌ Обнаружены ошибки в MergeRequest\\! \\| [%s](%s) (%d)", t.Event.Project.Name, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.WebURL), t.Event.Project.ID)
+		message = fmt.Sprintf("🎭❌ Обнаружены ошибки в MergeRequest\\! \\| [%s](%s) (%d)", tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.Name), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.WebURL), t.Event.Project.ID)
 	} else if t.Event.ObjectAttributes.MergeStatus == "can_be_merged" {
-		message = fmt.Sprintf("🎭✅ Был завершён MergeRequest\\! \\| [%s](%s) (%d)", t.Event.Project.Name, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.WebURL), t.Event.Project.ID)
+		message = fmt.Sprintf("🎭✅ Был завершён MergeRequest\\! \\| [%s](%s) (%d)", tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.Name), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Project.WebURL), t.Event.Project.ID)
 	} else {
 		return ""
 	}
 
 	message = fmt.Sprintf("%s\n—————\n[%s](%s)", message, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.ObjectAttributes.Title), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.ObjectAttributes.URL))
-	message = fmt.Sprintf("%s\n\n🌳: %s → %s", message, t.Event.ObjectAttributes.SourceBranch, t.Event.ObjectAttributes.TargetBranch)
+	message = fmt.Sprintf("%s\n\n🌳: %s → %s", message, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.ObjectAttributes.SourceBranch), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.ObjectAttributes.TargetBranch))
 	url := tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, fmt.Sprintf("%s/%s", os.Getenv("GITLAB_URL"), t.Event.User.Username))
-	message = fmt.Sprintf("%s\n🧙: [%s](%s)", message, t.Event.User.Name, url)
+	message = fmt.Sprintf("%s\n🧙: [%s](%s)", message, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.User.Name), url)
 
 	return message
 }
