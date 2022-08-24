@@ -32,6 +32,16 @@ func Slugify(val string) string {
 	return strings.Replace(val, " ", "_", -1)
 }
 
+func Keys(arr map[string]string) []string {
+	var res []string
+
+	for k := range arr {
+		res = append(res, k)
+	}
+
+	return res
+}
+
 func AllowEvents() []string {
 	events := []string{
 		string(gitlab.EventTypePipeline),

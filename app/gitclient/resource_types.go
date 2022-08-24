@@ -3,11 +3,28 @@ package gitclient
 import (
 	"errors"
 	"fmt"
+	"github.com/leodido/go-conventionalcommits"
+	"github.com/leodido/go-conventionalcommits/parser"
 	"github.com/xanzy/go-gitlab"
+	"gitlab-telegram-notification-go/helper"
 	"gitlab-telegram-notification-go/models"
 	"os"
 	"strings"
 )
+
+var types = map[string]string{
+	"feat":     "Новое",
+	"fix":      "Исправления",
+	"chore":    "Рутинные исправления",
+	"test":     "Тестирование",
+	"build":    "Сборка",
+	"refactor": "Рефакторинг кода",
+	"docs":     "Обновления документации",
+	"ci":       "Изменения CI",
+	"perf":     "Исправления производительности",
+	"style":    "Декоративные исправления",
+	"other":    "Другое",
+}
 
 type PipelineDefaultType struct {
 	Event     *gitlab.PipelineEvent
@@ -99,6 +116,117 @@ func (t *PipelineCommitsType) Make() string {
 			continue
 		}
 		message = fmt.Sprintf("%s\n📄 [%s](%s)", message, commit.Title, commit.WebURL)
+	}
+
+	return fmt.Sprintf("%s\n%s", message, t.Footer())
+}
+
+type PipelineLogType struct {
+	PipelineDefaultType
+	Commits []*gitlab.Commit
+}
+
+func (t *PipelineLogType) Make() string {
+	message, err := t.Header()
+
+	if err != nil {
+		return ""
+	}
+
+	message = fmt.Sprintf("%s\n", message)
+
+	commits := map[string]map[string][]map[string]interface{}{}
+
+	for _, commit := range t.Commits {
+		if len(commit.ParentIDs) > 1 {
+			continue
+		}
+
+		res, _ := parser.NewMachine(parser.WithBestEffort()).Parse([]byte(commit.Message))
+
+		if res.Ok() {
+			resCommit := res.(*conventionalcommits.ConventionalCommit)
+
+			t := resCommit.Type
+
+			keyTypes := helper.Keys(types)
+
+			if !helper.Contains(keyTypes, t) {
+				t = "other"
+			}
+
+			_, ok := commits[t]
+
+			if !ok {
+				commits[t] = map[string][]map[string]interface{}{}
+			}
+
+			scope := resCommit.Scope
+
+			if scope == nil {
+				scope = gitlab.String("Другое")
+			}
+
+			_, ok = commits[t][*scope]
+
+			if !ok {
+				commits[t][*scope] = []map[string]interface{}{}
+			}
+
+			body := resCommit.Body
+
+			if body == nil {
+				body = gitlab.String("")
+			}
+
+			jira, ok := resCommit.Footers["jira"]
+
+			if !ok {
+				jira = []string{}
+			}
+
+			commits[t][*scope] = append(commits[t][*scope], map[string]interface{}{
+				"description": resCommit.Description,
+				"url":         commit.WebURL,
+				"body":        *body,
+				"jira":        jira,
+			})
+		}
+	}
+
+	for k, v := range types {
+		data, ok := commits[k]
+
+		if !ok {
+			continue
+		}
+
+		subMessage := fmt.Sprintf("*%s*:\n", v)
+		for scopeKey, dataCommits := range data {
+			subMessage = fmt.Sprintf("%s    __%s__:\n", subMessage, scopeKey)
+			for _, commit := range dataCommits {
+				subMessage = fmt.Sprintf("%s        📄_[%s](%s)_", subMessage, commit["description"], commit["url"])
+
+				jiraDomain := os.Getenv("JIRA_DOMAIN")
+
+				if jiraDomain != "" {
+					jira := commit["jira"].([]string)
+
+					if len(jira) != 0 {
+						var jiraMessage []string
+						for _, j := range jira {
+							jiraMessage = append(jiraMessage, fmt.Sprintf("[%s](%s/browse/%s)", j, jiraDomain, j))
+						}
+
+						//Это какой-то пздц.. Почему в golang нельзя экранировать символы прямо в тексте!??!?!
+						subMessage = fmt.Sprintf("%s %s%s%s", subMessage, `\(`, strings.Join(jiraMessage, ", "), `\(`)
+					}
+				}
+
+				subMessage = fmt.Sprintf("%s\n", subMessage)
+			}
+		}
+		message = fmt.Sprintf("%s%s\n", message, subMessage)
 	}
 
 	return fmt.Sprintf("%s\n%s", message, t.Footer())

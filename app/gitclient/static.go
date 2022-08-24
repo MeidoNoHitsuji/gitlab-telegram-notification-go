@@ -127,22 +127,33 @@ func Handler(event interface{}) error {
 
 		var data interface{}
 
-		if event.ObjectAttributes.Status == "success" && event.ObjectAttributes.Ref == "develop" {
-			commits, err := GetCommitsLastPipeline(event.Project.ID, event.ObjectAttributes.BeforeSHA, event.ObjectAttributes.SHA)
+		data = PipelineDefaultType{
+			Event: event,
+		}
 
-			if err != nil {
-				break
-			}
+		if event.ObjectAttributes.Status == "success" {
+			if event.ObjectAttributes.Ref == "develop" {
+				commits, err := GetCommitsLastPipeline(event.Project.ID, event.ObjectAttributes.BeforeSHA, event.ObjectAttributes.SHA)
 
-			data = PipelineCommitsType{
-				PipelineDefaultType: PipelineDefaultType{
-					Event: event,
-				},
-				Commits: commits,
-			}
-		} else {
-			data = PipelineDefaultType{
-				Event: event,
+				if err != nil {
+					break
+				}
+
+				data = PipelineCommitsType{
+					PipelineDefaultType: data.(PipelineDefaultType),
+					Commits:             commits,
+				}
+			} else if event.ObjectAttributes.Ref == "master" {
+				commits, err := GetCommitsLastPipeline(event.Project.ID, event.ObjectAttributes.BeforeSHA, event.ObjectAttributes.SHA)
+
+				if err != nil {
+					break
+				}
+
+				data = PipelineLogType{
+					PipelineDefaultType: data.(PipelineDefaultType),
+					Commits:             commits,
+				}
 			}
 		}
 
@@ -154,6 +165,10 @@ func Handler(event interface{}) error {
 				message = data.Make()
 				break
 			case PipelineCommitsType:
+				data.Subscribe = &subscribe
+				message = data.Make()
+				break
+			case PipelineLogType:
 				data.Subscribe = &subscribe
 				message = data.Make()
 				break
