@@ -207,9 +207,9 @@ func (t *PipelineLogType) Make() string {
 
 		subMessage := fmt.Sprintf("\n*%s*:", v)
 		for scopeKey, dataCommits := range data {
-			subMessage = fmt.Sprintf("\n%s    __%s__:", subMessage, cases.Title(language.Und).String(scopeKey))
+			subMessage = fmt.Sprintf("%s\n    __%s__:", subMessage, cases.Title(language.Und).String(scopeKey))
 			for _, commit := range dataCommits {
-				subMessage = fmt.Sprintf("\n%s        📄_[%s](%s)_", subMessage, commit["description"], tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, commit["url"].(string)))
+				subMessage = fmt.Sprintf("%s\n        📄_[%s](%s)_", subMessage, commit["description"], tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, commit["url"].(string)))
 
 				jiraDomain := os.Getenv("JIRA_DOMAIN")
 
