@@ -8,6 +8,8 @@ import (
 	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/helper"
 	"gitlab-telegram-notification-go/models"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"os"
 	"strings"
 )
@@ -203,7 +205,7 @@ func (t *PipelineLogType) Make() string {
 
 		subMessage := fmt.Sprintf("*%s*:\n", v)
 		for scopeKey, dataCommits := range data {
-			subMessage = fmt.Sprintf("%s    __%s__:\n", subMessage, scopeKey)
+			subMessage = fmt.Sprintf("%s    __%s__:\n", subMessage, cases.Title(language.Und).String(scopeKey))
 			for _, commit := range dataCommits {
 				subMessage = fmt.Sprintf("%s        📄_[%s](%s)_", subMessage, commit["description"], commit["url"])
 
