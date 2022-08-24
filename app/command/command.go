@@ -19,7 +19,7 @@ func getProjectFromArguments(arguments string) (*gitlab.Project, []string, error
 		strings.TrimSpace(arguments), " ")
 
 	if len(args) == 0 || len(args[0]) == 0 {
-		return nil, nil, errors.New("Вы должны передать параметром наименование проекта.")
+		return nil, nil, errors.New("Вы должны передать параметром наименование проекта\\.")
 	}
 
 	projects, _, err := git.Projects.ListProjects(&gitlab.ListProjectsOptions{
@@ -33,7 +33,7 @@ func getProjectFromArguments(arguments string) (*gitlab.Project, []string, error
 	}
 
 	if len(projects) == 0 {
-		return nil, nil, errors.New("Не было найдено ни единого проекта по вашему запросу.")
+		return nil, nil, errors.New("Не было найдено ни единого проекта по вашему запросу\\.")
 	}
 
 	return projects[0], args[1:], nil
