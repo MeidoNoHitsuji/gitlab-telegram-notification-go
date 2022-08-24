@@ -6,7 +6,6 @@ import (
 	"gitlab-telegram-notification-go/database"
 	"gitlab-telegram-notification-go/telegram"
 	"os"
-	"strings"
 )
 
 func Subscribe(project *gitlab.Project, hookOptions gitlab.AddProjectHookOptions) (string, error) {
@@ -101,24 +100,23 @@ func Handler(event interface{}) error {
 		})
 		var message string
 
-		if event.ObjectAttributes.MergeStatus == "unchecked" {
-			message = fmt.Sprintf("🎭⚠ Необходимо проверить MergeRequest! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
-		} else if event.ObjectAttributes.MergeStatus == "cannot_be_merged" {
-			message = fmt.Sprintf("🎭❌ Обнаружены ошибки в MergeRequest! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
-		} else if event.ObjectAttributes.MergeStatus == "can_be_merged" {
-			message = fmt.Sprintf("🎭✅ Был завершён MergeRequest! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
-		} else {
-			break
-		}
-
-		message = fmt.Sprintf("%s\n—————\n[%s](%s)", message, event.ObjectAttributes.Title, event.ObjectAttributes.URL)
-		message = fmt.Sprintf("%s\n\n🌳: %s → %s", message, event.ObjectAttributes.SourceBranch, event.ObjectAttributes.TargetBranch)
-		message = fmt.Sprintf("%s\n🧙: [%s](%s/%s)", message, event.User.Name, os.Getenv("GITLAB_URL"), event.User.Username)
-
 		for _, subscribe := range subscribes {
+
+			data := MergeDefaultType{
+				Event:     event,
+				Subscribe: &subscribe,
+			}
+
+			message = data.Make()
+
+			if message == "" {
+				continue
+			}
+
 			telegram.SendMessage(&subscribe.TelegramChannel, message, nil, nil)
 		}
 	case *gitlab.PipelineEvent:
+		var message string
 		subscribes := database.GetSubscribesByProjectIdAndKind(database.GetSubscribesFilter{
 			ProjectId:      event.Project.ID,
 			Event:          event.ObjectKind,
@@ -127,75 +125,46 @@ func Handler(event interface{}) error {
 			BranchName:     event.ObjectAttributes.Ref,
 		})
 
-		var message string
-		if event.ObjectAttributes.Status == "failed" {
-			message = fmt.Sprintf("🧩❌ PipeLine завершился ошибкой! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
-			message = fmt.Sprintf("%s\n—————", message)
-		} else if event.ObjectAttributes.Status == "success" {
-			message = fmt.Sprintf("🧩✅ PipeLine завершился успешно! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
-			message = fmt.Sprintf("%s\n—————", message)
-		} else {
-			break
-		}
-
-		if event.MergeRequest.ID != 0 {
-			message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, event.MergeRequest.Title, event.Project.WebURL, event.ObjectAttributes.ID)
-		} else {
-			messages := strings.Split(event.Commit.Message, "\n")
-
-			if len(messages) > 0 {
-				message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, messages[0], event.Project.WebURL, event.ObjectAttributes.ID)
-			} else {
-				message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, event.Commit.Message, event.Project.WebURL, event.ObjectAttributes.ID)
-			}
-		}
+		var data interface{}
 
 		if event.ObjectAttributes.Status == "success" && event.ObjectAttributes.Ref == "develop" {
-			message = fmt.Sprintf("%s\nЗалитые изменения:", message)
 			commits, err := GetCommitsLastPipeline(event.Project.ID, event.ObjectAttributes.BeforeSHA, event.ObjectAttributes.SHA)
+
 			if err != nil {
-				return err
+				break
 			}
 
-			for _, commit := range commits {
-				if len(commit.ParentIDs) > 1 {
-					continue
-				}
-				message = fmt.Sprintf("%s\n📄 [%s](%s)", message, commit.Title, commit.WebURL)
+			data = PipelineCommitsType{
+				PipelineDefaultType: PipelineDefaultType{
+					Event: event,
+				},
+				Commits: commits,
 			}
 		} else {
-			message = fmt.Sprintf("%s\nСборочная линия:", message)
-
-			for _, stage := range event.ObjectAttributes.Stages {
-				for _, build := range event.Builds {
-					if build.Stage == stage {
-						emoji := "❓"
-
-						if build.Status == "failed" {
-							emoji = "❌"
-						} else if build.Status == "skipped" {
-							emoji = "⏩"
-						} else if build.Status == "success" {
-							emoji = "✅"
-						}
-
-						message = fmt.Sprintf("%s\n%s [%s](%s/-/jobs/%d)", message, emoji, build.Name, event.Project.WebURL, build.ID)
-					}
-				}
+			data = PipelineDefaultType{
+				Event: event,
 			}
 		}
-
-		message = fmt.Sprintf("%s\n", message)
-
-		if event.MergeRequest.ID != 0 {
-			message = fmt.Sprintf("%s\n🌳: %s → %s", message, event.MergeRequest.SourceBranch, event.MergeRequest.TargetBranch)
-		} else {
-			message = fmt.Sprintf("%s\n🌳: %s", message, event.ObjectAttributes.Ref)
-		}
-
-		message = fmt.Sprintf("%s\n🧙: [%s](%s/%s)", message, event.User.Name, os.Getenv("GITLAB_URL"), event.User.Username)
 
 		for _, subscribe := range subscribes {
+
+			switch data := data.(type) {
+			case PipelineDefaultType:
+				data.Subscribe = &subscribe
+				message = data.Make()
+				break
+			case PipelineCommitsType:
+				data.Subscribe = &subscribe
+				message = data.Make()
+				break
+			default:
+				message = ""
+			}
+
+			if message == "" {
+				continue
+			}
+
 			telegram.SendMessage(&subscribe.TelegramChannel, message, nil, nil)
 		}
 	}
