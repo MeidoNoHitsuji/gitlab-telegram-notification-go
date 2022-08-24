@@ -34,10 +34,10 @@ type PipelineDefaultType struct {
 func (t PipelineDefaultType) Header() (string, error) {
 	var message string
 	if t.Event.ObjectAttributes.Status == "failed" {
-		message = fmt.Sprintf("🧩❌ PipeLine завершился ошибкой! | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
+		message = fmt.Sprintf("🧩❌ PipeLine завершился ошибкой. | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
 		message = fmt.Sprintf("%s\n—————", message)
 	} else if t.Event.ObjectAttributes.Status == "success" {
-		message = fmt.Sprintf("🧩✅ PipeLine завершился успешно! | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
+		message = fmt.Sprintf("🧩✅ PipeLine завершился успешно. | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
 		message = fmt.Sprintf("%s\n—————", message)
 	} else {
 		return "", errors.New("Такой статус пайплайна не поддерживается.")
@@ -219,7 +219,7 @@ func (t *PipelineLogType) Make() string {
 						}
 
 						//Это какой-то пздц.. Почему в golang нельзя экранировать символы прямо в тексте!??!?!
-						subMessage = fmt.Sprintf("%s %s%s%s", subMessage, `\(`, strings.Join(jiraMessage, ", "), `\(`)
+						subMessage = fmt.Sprintf("%s %s%s%s", subMessage, `\(`, strings.Join(jiraMessage, ", "), `\)`)
 					}
 				}
 
@@ -240,11 +240,11 @@ type MergeDefaultType struct {
 func (t *MergeDefaultType) Make() string {
 	var message string
 	if t.Event.ObjectAttributes.MergeStatus == "unchecked" {
-		message = fmt.Sprintf("🎭⚠ Необходимо проверить MergeRequest! | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
+		message = fmt.Sprintf("🎭⚠ Необходимо проверить MergeRequest. | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
 	} else if t.Event.ObjectAttributes.MergeStatus == "cannot_be_merged" {
-		message = fmt.Sprintf("🎭❌ Обнаружены ошибки в MergeRequest! | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
+		message = fmt.Sprintf("🎭❌ Обнаружены ошибки в MergeRequest. | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
 	} else if t.Event.ObjectAttributes.MergeStatus == "can_be_merged" {
-		message = fmt.Sprintf("🎭✅ Был завершён MergeRequest! | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
+		message = fmt.Sprintf("🎭✅ Был завершён MergeRequest. | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
 	} else {
 		return ""
 	}

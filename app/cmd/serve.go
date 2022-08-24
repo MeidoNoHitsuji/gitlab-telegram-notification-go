@@ -66,11 +66,11 @@ func serve(cmd *cobra.Command, args []string) {
 					if err == nil {
 						telegram.SendMessageById(update.Message.Chat.ID, text, nil, nil)
 					} else {
-						telegram.SendMessageById(update.Message.Chat.ID, fmt.Sprintf("Ошибка! Не удалось подписаться по причине: %s", err), nil, nil)
+						telegram.SendMessageById(update.Message.Chat.ID, fmt.Sprintf("Ошибка"+`\!`+" Не удалось подписаться по причине: %s", err), nil, nil)
 					}
 					break
 				case "start":
-					telegram.SendMessageById(update.Message.Chat.ID, "Привет! Мой список команд доступен тебе через `/`.", nil, nil)
+					telegram.SendMessageById(update.Message.Chat.ID, "Привет"+`\!`+" Мой список команд доступен тебе через `/`.", nil, nil)
 					break
 				case "test":
 					ids := []int64{update.Message.Chat.ID}

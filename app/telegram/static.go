@@ -19,10 +19,10 @@ func SendMessage(channel *models.TelegramChannel, message string, keyboard inter
 	}
 
 	msgConf := tgbotapi.NewMessage(channel.ID, message)
-	msgConf.ParseMode = tgbotapi.ModeMarkdown
+	msgConf.ParseMode = tgbotapi.ModeMarkdownV2
 	msgConf.DisableWebPagePreview = true
 	msgConf.Entities = entities
-	
+
 	if keyboard != nil {
 		msgConf.ReplyMarkup = keyboard
 	}
