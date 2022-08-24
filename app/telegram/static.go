@@ -22,9 +22,15 @@ func SendMessage(channel *models.TelegramChannel, message string, keyboard inter
 	msgConf.ParseMode = tgbotapi.ModeMarkdown
 	msgConf.DisableWebPagePreview = true
 	msgConf.Entities = entities
+	
 	if keyboard != nil {
 		msgConf.ReplyMarkup = keyboard
 	}
+
+	if channel.ID < 0 {
+		msgConf.DisableNotification = true
+	}
+
 	msg, err := bot.Send(msgConf)
 
 	if err != nil {

@@ -84,7 +84,13 @@ func Subscribe(project *gitlab.Project, hookOptions gitlab.AddProjectHookOptions
 func Handler(event interface{}) error {
 	switch event := event.(type) {
 	case *gitlab.MergeEvent:
-		subscribes := database.GetSubscribesByProjectIdAndKind(event.Project.ID, event.ObjectKind)
+		subscribes := database.GetSubscribesByProjectIdAndKind(database.GetSubscribesFilter{
+			ProjectId:      event.Project.ID,
+			Event:          event.ObjectKind,
+			Status:         event.ObjectAttributes.State,
+			AuthorUsername: event.User.Username,
+			BranchName:     event.ObjectAttributes.TargetBranch,
+		})
 		var message string
 
 		if event.ObjectAttributes.MergeStatus == "unchecked" {
@@ -105,7 +111,14 @@ func Handler(event interface{}) error {
 			telegram.SendMessage(&subscribe.TelegramChannel, message, nil, nil)
 		}
 	case *gitlab.PipelineEvent:
-		subscribes := database.GetSubscribesByProjectIdAndKind(event.Project.ID, event.ObjectKind)
+		subscribes := database.GetSubscribesByProjectIdAndKind(database.GetSubscribesFilter{
+			ProjectId:      event.Project.ID,
+			Event:          event.ObjectKind,
+			Status:         event.ObjectAttributes.Status,
+			AuthorUsername: event.User.Username,
+			BranchName:     event.ObjectAttributes.Ref,
+		})
+
 		var message string
 		if event.ObjectAttributes.Status == "failed" {
 			message = fmt.Sprintf("🧩❌ PipeLine завершился ошибкой! | [%s](%s) (%d)", event.Project.Name, event.Project.WebURL, event.Project.ID)
@@ -129,22 +142,37 @@ func Handler(event interface{}) error {
 			}
 		}
 
-		message = fmt.Sprintf("%s\nСборочная линия:", message)
+		if event.ObjectAttributes.Status == "success" && event.ObjectAttributes.Ref == "develop" {
+			message = fmt.Sprintf("%s\nЗалитые изменения:", message)
+			commits, err := GetCommitsLastPipeline(event.Project.ID, event.ObjectAttributes.BeforeSHA, event.ObjectAttributes.SHA)
+			if err != nil {
+				return err
+			}
 
-		for _, stage := range event.ObjectAttributes.Stages {
-			for _, build := range event.Builds {
-				if build.Stage == stage {
-					emoji := "❓"
+			for _, commit := range commits {
+				if len(commit.ParentIDs) > 1 {
+					continue
+				}
+				message = fmt.Sprintf("%s\n📄 [%s](%s)", message, commit.Title, commit.WebURL)
+			}
+		} else {
+			message = fmt.Sprintf("%s\nСборочная линия:", message)
 
-					if build.Status == "failed" {
-						emoji = "❌"
-					} else if build.Status == "skipped" {
-						emoji = "⏩"
-					} else if build.Status == "success" {
-						emoji = "✅"
+			for _, stage := range event.ObjectAttributes.Stages {
+				for _, build := range event.Builds {
+					if build.Stage == stage {
+						emoji := "❓"
+
+						if build.Status == "failed" {
+							emoji = "❌"
+						} else if build.Status == "skipped" {
+							emoji = "⏩"
+						} else if build.Status == "success" {
+							emoji = "✅"
+						}
+
+						message = fmt.Sprintf("%s\n%s [%s](%s/-/jobs/%d)", message, emoji, build.Name, event.Project.WebURL, build.ID)
 					}
-
-					message = fmt.Sprintf("%s\n%s [%s](%s/-/jobs/%d)", message, emoji, build.Name, event.Project.WebURL, build.ID)
 				}
 			}
 		}
@@ -164,4 +192,19 @@ func Handler(event interface{}) error {
 		}
 	}
 	return nil
+}
+
+func GetCommitsLastPipeline(projectId int, fromHash string, toHash string) ([]*gitlab.Commit, error) {
+	git := Instant()
+
+	compare, _, err := git.Repositories.Compare(projectId, &gitlab.CompareOptions{
+		From: gitlab.String(fromHash),
+		To:   gitlab.String(toHash),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return compare.Commits, nil
 }
