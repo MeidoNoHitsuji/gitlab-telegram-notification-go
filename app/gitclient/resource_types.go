@@ -3,6 +3,7 @@ package gitclient
 import (
 	"errors"
 	"fmt"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/leodido/go-conventionalcommits"
 	"github.com/leodido/go-conventionalcommits/parser"
 	"github.com/xanzy/go-gitlab"
@@ -36,24 +37,24 @@ type PipelineDefaultType struct {
 func (t PipelineDefaultType) Header() (string, error) {
 	var message string
 	if t.Event.ObjectAttributes.Status == "failed" {
-		message = fmt.Sprintf("🧩❌ PipeLine завершился ошибкой. | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
+		message = fmt.Sprintf("🧩❌ PipeLine завершился ошибкой\\! \\| [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
 		message = fmt.Sprintf("%s\n—————", message)
 	} else if t.Event.ObjectAttributes.Status == "success" {
-		message = fmt.Sprintf("🧩✅ PipeLine завершился успешно. | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
+		message = fmt.Sprintf("🧩✅ PipeLine завершился успешно\\! \\| [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
 		message = fmt.Sprintf("%s\n—————", message)
 	} else {
-		return "", errors.New("Такой статус пайплайна не поддерживается.")
+		return "", errors.New("Такой статус пайплайна не поддерживается\\.")
 	}
 
 	if t.Event.MergeRequest.ID != 0 {
-		message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, t.Event.MergeRequest.Title, t.Event.Project.WebURL, t.Event.ObjectAttributes.ID)
+		message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.MergeRequest.Title), t.Event.Project.WebURL, t.Event.ObjectAttributes.ID)
 	} else {
 		messages := strings.Split(t.Event.Commit.Message, "\n")
 
 		if len(messages) > 0 {
-			message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, messages[0], t.Event.Project.WebURL, t.Event.ObjectAttributes.ID)
+			message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, messages[0]), t.Event.Project.WebURL, t.Event.ObjectAttributes.ID)
 		} else {
-			message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, t.Event.Commit.Message, t.Event.Project.WebURL, t.Event.ObjectAttributes.ID)
+			message = fmt.Sprintf("%s\n[%s](%s/-/pipelines/%d)\n—————", message, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.Commit.Message), t.Event.Project.WebURL, t.Event.ObjectAttributes.ID)
 		}
 	}
 
@@ -188,9 +189,9 @@ func (t *PipelineLogType) Make() string {
 			}
 
 			commits[t][*scope] = append(commits[t][*scope], map[string]interface{}{
-				"description": resCommit.Description,
+				"description": tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, resCommit.Description),
 				"url":         commit.WebURL,
-				"body":        *body,
+				"body":        tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, *body),
 				"jira":        jira,
 			})
 		}
@@ -217,11 +218,10 @@ func (t *PipelineLogType) Make() string {
 					if len(jira) != 0 {
 						var jiraMessage []string
 						for _, j := range jira {
-							jiraMessage = append(jiraMessage, fmt.Sprintf("[%s](%s/browse/%s)", j, jiraDomain, j))
+							jiraMessage = append(jiraMessage, fmt.Sprintf("[%s](%s/browse/%s)", tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, j), jiraDomain, j))
 						}
 
-						//Это какой-то пздц.. Почему в golang нельзя экранировать символы прямо в тексте!??!?!
-						subMessage = fmt.Sprintf("%s %s%s%s", subMessage, `\(`, strings.Join(jiraMessage, ", "), `\)`)
+						subMessage = fmt.Sprintf("%s \\(%s\\)", subMessage, strings.Join(jiraMessage, ", "))
 					}
 				}
 
@@ -242,16 +242,16 @@ type MergeDefaultType struct {
 func (t *MergeDefaultType) Make() string {
 	var message string
 	if t.Event.ObjectAttributes.MergeStatus == "unchecked" {
-		message = fmt.Sprintf("🎭⚠ Необходимо проверить MergeRequest. | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
+		message = fmt.Sprintf("🎭⚠ Необходимо проверить MergeRequest\\! \\| [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
 	} else if t.Event.ObjectAttributes.MergeStatus == "cannot_be_merged" {
-		message = fmt.Sprintf("🎭❌ Обнаружены ошибки в MergeRequest. | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
+		message = fmt.Sprintf("🎭❌ Обнаружены ошибки в MergeRequest\\! \\| [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
 	} else if t.Event.ObjectAttributes.MergeStatus == "can_be_merged" {
-		message = fmt.Sprintf("🎭✅ Был завершён MergeRequest. | [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
+		message = fmt.Sprintf("🎭✅ Был завершён MergeRequest\\! \\| [%s](%s) (%d)", t.Event.Project.Name, t.Event.Project.WebURL, t.Event.Project.ID)
 	} else {
 		return ""
 	}
 
-	message = fmt.Sprintf("%s\n—————\n[%s](%s)", message, t.Event.ObjectAttributes.Title, t.Event.ObjectAttributes.URL)
+	message = fmt.Sprintf("%s\n—————\n[%s](%s)", message, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, t.Event.ObjectAttributes.Title), t.Event.ObjectAttributes.URL)
 	message = fmt.Sprintf("%s\n\n🌳: %s → %s", message, t.Event.ObjectAttributes.SourceBranch, t.Event.ObjectAttributes.TargetBranch)
 	message = fmt.Sprintf("%s\n🧙: [%s](%s/%s)", message, t.Event.User.Name, os.Getenv("GITLAB_URL"), t.Event.User.Username)
 
