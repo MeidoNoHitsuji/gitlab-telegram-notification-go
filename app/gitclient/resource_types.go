@@ -141,7 +141,7 @@ func (t *PipelineLogType) Make() string {
 	commits := map[string]map[string][]map[string]interface{}{}
 
 	for _, commit := range t.Commits {
-		if len(commit.ParentIDs) > 1 {
+		if len(commit.ParentIDs) > 1 || strings.HasPrefix(commit.Message, "Merge") {
 			continue
 		}
 
@@ -178,9 +178,9 @@ func (t *PipelineLogType) Make() string {
 		}
 
 		commits[t][scope] = append(commits[t][scope], map[string]interface{}{
-			"description": tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, resCommit.Description),
+			"description": resCommit.Description,
 			"url":         commit.WebURL,
-			"body":        tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, body),
+			"body":        body,
 			"jira":        jira,
 		})
 	}
