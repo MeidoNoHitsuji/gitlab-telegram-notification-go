@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"gitlab-telegram-notification-go/helper"
 	"regexp"
 	"strings"
 )
@@ -44,7 +45,7 @@ func CompileCommit(s string) ComType {
 	if c.Description != "" {
 		arr := strings.SplitN(c.Description, "\n\n", 2)
 		if len(arr) > 1 {
-			c.Description = arr[0]
+			c.Description = strings.TrimSpace(arr[0])
 			bodyFooter := arr[1]
 			bodyFooter = strings.TrimSpace(strings.Trim(bodyFooter, "\n"))
 			arr := strings.SplitN(bodyFooter, "\n\n", 2)
@@ -74,6 +75,10 @@ func CompileCommit(s string) ComType {
 			c.Footer = map[string][]string{}
 		}
 	}
+
+	c.Scope = helper.TitleFirst(c.Scope)
+	c.Description = helper.TitleFirst(c.Description)
+	c.Body = helper.TitleFirst(c.Body)
 
 	return c
 }

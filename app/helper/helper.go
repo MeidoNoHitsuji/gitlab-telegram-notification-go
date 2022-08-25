@@ -1,9 +1,8 @@
 package helper
 
 import (
+	"fmt"
 	"github.com/xanzy/go-gitlab"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"strings"
 )
 
@@ -64,15 +63,11 @@ func AllowEvents() []string {
 }
 
 func TitleFirst(s string) string {
-	var newS string
-
-	for i := 0; i < len(s); i++ {
-		if i == 0 {
-			newS += cases.Upper(language.Und).String(string(s[i]))
-		} else {
-			newS += cases.Lower(language.Und).String(string(s[i]))
-		}
-
+	
+	if len(s) > 0 {
+		upperS := strings.ToUpper(s)
+		lowerS := strings.ToLower(s)
+		s = fmt.Sprintf("%s%s", string([]rune(upperS)[0]), string([]rune(lowerS)[1:]))
 	}
 
 	return s
