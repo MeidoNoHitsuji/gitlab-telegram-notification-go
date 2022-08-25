@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/leodido/go-conventionalcommits"
-	"github.com/leodido/go-conventionalcommits/parser"
 	"github.com/xanzy/go-gitlab"
+	"gitlab-telegram-notification-go/gitclient/parser"
 	"gitlab-telegram-notification-go/helper"
 	"gitlab-telegram-notification-go/models"
 	"golang.org/x/text/cases"
@@ -146,61 +145,44 @@ func (t *PipelineLogType) Make() string {
 			continue
 		}
 
-		res, _ := parser.NewMachine(parser.WithBestEffort()).Parse([]byte(commit.Message))
+		resCommit := parser.CompileCommit(commit.Message)
 
-		if res == nil {
-			fmt.Printf("%s комит сломан!", commit.WebURL)
-			continue
+		t := resCommit.Type
+
+		keyTypes := helper.Keys(types)
+
+		if !helper.Contains(keyTypes, t) {
+			t = "other"
 		}
 
-		if res.Ok() {
-			resCommit := res.(*conventionalcommits.ConventionalCommit)
+		_, ok := commits[t]
 
-			t := resCommit.Type
-
-			keyTypes := helper.Keys(types)
-
-			if !helper.Contains(keyTypes, t) {
-				t = "other"
-			}
-
-			_, ok := commits[t]
-
-			if !ok {
-				commits[t] = map[string][]map[string]interface{}{}
-			}
-
-			scope := resCommit.Scope
-
-			if scope == nil {
-				scope = gitlab.String("Другое")
-			}
-
-			_, ok = commits[t][*scope]
-
-			if !ok {
-				commits[t][*scope] = []map[string]interface{}{}
-			}
-
-			body := resCommit.Body
-
-			if body == nil {
-				body = gitlab.String("")
-			}
-
-			jira, ok := resCommit.Footers["jira"]
-
-			if !ok {
-				jira = []string{}
-			}
-
-			commits[t][*scope] = append(commits[t][*scope], map[string]interface{}{
-				"description": tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, resCommit.Description),
-				"url":         commit.WebURL,
-				"body":        tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, *body),
-				"jira":        jira,
-			})
+		if !ok {
+			commits[t] = map[string][]map[string]interface{}{}
 		}
+
+		scope := resCommit.Scope
+
+		_, ok = commits[t][scope]
+
+		if !ok {
+			commits[t][scope] = []map[string]interface{}{}
+		}
+
+		body := resCommit.Body
+
+		jira, ok := resCommit.Footer["jira"]
+
+		if !ok {
+			jira = []string{}
+		}
+
+		commits[t][scope] = append(commits[t][scope], map[string]interface{}{
+			"description": tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, resCommit.Description),
+			"url":         commit.WebURL,
+			"body":        tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, body),
+			"jira":        jira,
+		})
 	}
 
 	for k, v := range types {
@@ -214,7 +196,7 @@ func (t *PipelineLogType) Make() string {
 		for scopeKey, dataCommits := range data {
 			subMessage = fmt.Sprintf("%s\n    __%s__:", subMessage, cases.Title(language.Und).String(scopeKey))
 			for _, commit := range dataCommits {
-				subMessage = fmt.Sprintf("%s\n        📄_[%s](%s)_", subMessage, commit["description"], tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, commit["url"].(string)))
+				subMessage = fmt.Sprintf("%s\n        📄_[%s](%s)_", subMessage, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, cases.Title(language.Und).String(commit["description"].(string))), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, commit["url"].(string)))
 
 				jiraDomain := os.Getenv("JIRA_DOMAIN")
 
@@ -224,7 +206,7 @@ func (t *PipelineLogType) Make() string {
 					if len(jira) != 0 {
 						var jiraMessage []string
 						for _, j := range jira {
-							url := tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, fmt.Sprintf("%s/browse/%s", jiraDomain, j))
+							url := tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, fmt.Sprintf("%s/browse/%s", jiraDomain, strings.ToUpper(j)))
 							jiraMessage = append(jiraMessage, fmt.Sprintf("[%s](%s)", tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, j), url))
 						}
 
