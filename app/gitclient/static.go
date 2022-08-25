@@ -144,7 +144,7 @@ func Handler(event interface{}) error {
 					PipelineDefaultType: data.(PipelineDefaultType),
 					Commits:             commits,
 				}
-			} else if event.ObjectAttributes.Ref == "master" || event.ObjectAttributes.Ref == "release" {
+			} else if event.ObjectAttributes.Ref == "master" {
 				commits, err := GetCommitsLastPipeline(event.Project.ID, event.ObjectAttributes.BeforeSHA, event.ObjectAttributes.SHA)
 
 				if err != nil {
