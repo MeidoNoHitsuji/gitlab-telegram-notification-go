@@ -148,6 +148,11 @@ func (t *PipelineLogType) Make() string {
 
 		res, _ := parser.NewMachine(parser.WithBestEffort()).Parse([]byte(commit.Message))
 
+		if res == nil {
+			fmt.Printf("%s комит сломан!", commit.WebURL)
+			continue
+		}
+
 		if res.Ok() {
 			resCommit := res.(*conventionalcommits.ConventionalCommit)
 
