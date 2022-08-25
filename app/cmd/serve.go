@@ -28,7 +28,7 @@ func serve(cmd *cobra.Command, args []string) {
 	_ = database.Instant()
 	bot := telegram.Instant()
 
-	go runWebServer(os.Getenv("GITLAB_SECRET"), os.Getenv("WEBHOOK_PORT"))
+	go runWebServer(os.Getenv("GITLAB_SECRET"), os.Getenv("RUN_PORT"))
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
