@@ -62,12 +62,11 @@ func AllowEvents() []string {
 	return newEvents
 }
 
-func TitleFirst(s string) string {
-	
+func UpperFirst(s string) string {
+
 	if len(s) > 0 {
 		upperS := strings.ToUpper(s)
-		lowerS := strings.ToLower(s)
-		s = fmt.Sprintf("%s%s", string([]rune(upperS)[0]), string([]rune(lowerS)[1:]))
+		s = fmt.Sprintf("%s%s", string([]rune(upperS)[0]), string([]rune(s)[1:]))
 	}
 
 	return s

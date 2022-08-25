@@ -76,9 +76,9 @@ func CompileCommit(s string) ComType {
 		}
 	}
 
-	c.Scope = helper.TitleFirst(c.Scope)
-	c.Description = helper.TitleFirst(c.Description)
-	c.Body = helper.TitleFirst(c.Body)
+	c.Scope = helper.UpperFirst(c.Scope)
+	c.Description = helper.UpperFirst(c.Description)
+	c.Body = helper.UpperFirst(c.Body)
 
 	return c
 }
