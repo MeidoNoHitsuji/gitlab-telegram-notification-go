@@ -97,7 +97,7 @@ func (t *PipelineDefaultType) Make() string {
 				}
 
 				url := tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, fmt.Sprintf("%s/-/jobs/%d", t.Event.Project.WebURL, build.ID))
-				message = fmt.Sprintf("%s\n%s [%s](%s)", message, emoji, build.Name, url)
+				message = fmt.Sprintf("%s\n%s [%s](%s)", message, emoji, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, build.Name), url)
 			}
 		}
 	}
