@@ -8,8 +8,6 @@ import (
 	"gitlab-telegram-notification-go/gitclient/parser"
 	"gitlab-telegram-notification-go/helper"
 	"gitlab-telegram-notification-go/models"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"os"
 	"strings"
 )
@@ -194,9 +192,9 @@ func (t *PipelineLogType) Make() string {
 
 		subMessage := fmt.Sprintf("\n*%s*:", v)
 		for scopeKey, dataCommits := range data {
-			subMessage = fmt.Sprintf("%s\n    __%s__:", subMessage, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, cases.Title(language.Und).String(scopeKey)))
+			subMessage = fmt.Sprintf("%s\n    __%s__:", subMessage, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, helper.TitleFirst(scopeKey)))
 			for _, commit := range dataCommits {
-				subMessage = fmt.Sprintf("%s\n        📄_[%s](%s)_", subMessage, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, cases.Title(language.Und).String(commit["description"].(string))), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, commit["url"].(string)))
+				subMessage = fmt.Sprintf("%s\n        _[%s](%s)_", subMessage, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, helper.TitleFirst(commit["description"].(string))), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, commit["url"].(string)))
 
 				jiraDomain := os.Getenv("JIRA_DOMAIN")
 

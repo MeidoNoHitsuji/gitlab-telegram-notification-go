@@ -2,6 +2,8 @@ package helper
 
 import (
 	"github.com/xanzy/go-gitlab"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"strings"
 )
 
@@ -59,4 +61,19 @@ func AllowEvents() []string {
 	}
 
 	return newEvents
+}
+
+func TitleFirst(s string) string {
+	var newS string
+
+	for i := 0; i < len(s); i++ {
+		if i == 0 {
+			newS += cases.Upper(language.Und).String(string(s[i]))
+		} else {
+			newS += cases.Lower(language.Und).String(string(s[i]))
+		}
+
+	}
+
+	return s
 }
