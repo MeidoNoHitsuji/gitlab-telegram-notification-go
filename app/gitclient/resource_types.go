@@ -194,7 +194,7 @@ func (t *PipelineLogType) Make() string {
 
 		subMessage := fmt.Sprintf("\n*%s*:", v)
 		for scopeKey, dataCommits := range data {
-			subMessage = fmt.Sprintf("%s\n    __%s__:", subMessage, cases.Title(language.Und).String(scopeKey))
+			subMessage = fmt.Sprintf("%s\n    __%s__:", subMessage, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, cases.Title(language.Und).String(scopeKey)))
 			for _, commit := range dataCommits {
 				subMessage = fmt.Sprintf("%s\n        📄_[%s](%s)_", subMessage, tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, cases.Title(language.Und).String(commit["description"].(string))), tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, commit["url"].(string)))
 
