@@ -79,6 +79,9 @@ func serve(cmd *cobra.Command, args []string) {
 					}
 					command.Test(ids...)
 					break
+				case "say":
+					telegram.SendMessageById(update.Message.Chat.ID, update.Message.CommandArguments(), nil, update.Message.Entities)
+					break
 				default:
 					telegram.SendMessageById(update.Message.Chat.ID, "Я не понимаю, что ты от меня хочешь\\.", nil, nil)
 					break
@@ -86,7 +89,6 @@ func serve(cmd *cobra.Command, args []string) {
 			} else {
 				switch update.Message.Text {
 				default:
-					telegram.SendMessageById(update.Message.Chat.ID, update.Message.Text, nil, update.Message.Entities)
 					//if update.Message.ReplyToMessage != nil {
 					//	fmt.Println(1, update.Message.ReplyToMessage, update.Message.ReplyToMessage.ReplyMarkup, update.Message.ReplyMarkup, 2)
 					//} else {
