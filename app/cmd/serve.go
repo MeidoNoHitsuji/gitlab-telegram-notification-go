@@ -80,6 +80,14 @@ func serve(cmd *cobra.Command, args []string) {
 					command.Test(ids...)
 					break
 				case "say":
+					deleteMessageConfig := tgbotapi.NewDeleteMessage(update.Message.Chat.ID, update.Message.MessageID)
+
+					_, err := bot.Request(deleteMessageConfig)
+
+					if err != nil {
+						fmt.Println(err)
+					}
+
 					telegram.SendMessageById(update.Message.Chat.ID, update.Message.CommandArguments(), nil, update.Message.Entities)
 					break
 				default:
