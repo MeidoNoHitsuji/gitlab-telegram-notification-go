@@ -4,14 +4,14 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/spf13/cobra"
-	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/command"
 	"gitlab-telegram-notification-go/database"
+	"gitlab-telegram-notification-go/routes"
 	"gitlab-telegram-notification-go/telegram"
-	"gitlab-telegram-notification-go/webhook"
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 var serveCmd = &cobra.Command{
@@ -73,11 +73,12 @@ func serve(cmd *cobra.Command, args []string) {
 					telegram.SendMessageById(update.Message.Chat.ID, "Привет\\! Мой список команд доступен тебе через `/`\\.", nil, nil)
 					break
 				case "test":
-					ids := []int64{update.Message.Chat.ID}
-					if update.Message.From.ID != update.Message.Chat.ID {
-						ids = append(ids, update.Message.From.ID)
-					}
-					command.Test(ids...)
+					//tgbotapi.
+					//ids := []int64{update.Message.Chat.ID}
+					//if update.Message.From.ID != update.Message.Chat.ID {
+					//	ids = append(ids, update.Message.From.ID)
+					//}
+					//command.Test(ids...)
 					break
 				case "say":
 					deleteMessageConfig := tgbotapi.NewDeleteMessage(update.Message.Chat.ID, update.Message.MessageID)
@@ -122,19 +123,16 @@ func serve(cmd *cobra.Command, args []string) {
 }
 
 func runWebServer(Secret string, Port string) {
-	wh := webhook.Webhook{
-		Secret: Secret,
-		EventsToAccept: []gitlab.EventType{
-			gitlab.EventTypeMergeRequest,
-			gitlab.EventTypePipeline,
-			gitlab.EventTypePush,
-		},
+
+	srv := &http.Server{
+		Handler: routes.New(Secret),
+		Addr:    fmt.Sprintf("0.0.0.0:%s", Port),
+
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
 	}
 
-	mux := http.NewServeMux()
-	mux.Handle(fmt.Sprintf("/%s", os.Getenv("WEBHOOK_URL")), wh)
-
-	if err := http.ListenAndServe(fmt.Sprintf("0.0.0.0:%s", Port), mux); err != nil {
+	if err := srv.ListenAndServe(); err != nil {
 		log.Fatalf("HTTP server ListenAndServe: %v", err)
 	}
 }
