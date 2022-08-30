@@ -90,7 +90,7 @@ func getFooter(s string) map[string][]string {
 
 	for _, m := range res {
 		if len(m) == 3 {
-			k := strings.TrimSpace(m[1])
+			k := strings.ToLower(strings.TrimSpace(m[1]))
 			v := strings.TrimSpace(m[2])
 			q, ok := f[k]
 			if ok {
