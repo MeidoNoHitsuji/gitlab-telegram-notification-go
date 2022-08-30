@@ -74,12 +74,8 @@ func (t PipelineDefaultType) Footer() string {
 	return message
 }
 
-func (t *PipelineDefaultType) Make() string {
-	message, err := t.Header()
-	if err != nil {
-		return ""
-	}
-	message = fmt.Sprintf("%s\nСборочная линия:", message)
+func (t *PipelineDefaultType) Body() string {
+	message := ""
 
 	for _, stage := range t.Event.ObjectAttributes.Stages {
 		for _, build := range t.Event.Builds {
@@ -100,6 +96,16 @@ func (t *PipelineDefaultType) Make() string {
 		}
 	}
 
+	return message
+}
+
+func (t *PipelineDefaultType) Make() string {
+	message, err := t.Header()
+	if err != nil {
+		return ""
+	}
+	message = fmt.Sprintf("%s\nСборочная линия:%s", message, t.Body())
+
 	return fmt.Sprintf("%s\n%s", message, t.Footer())
 }
 
@@ -108,19 +114,24 @@ type PipelineCommitsType struct {
 	Commits []*gitlab.Commit
 }
 
-func (t *PipelineCommitsType) Make() string {
-	message, err := t.Header()
-	if err != nil {
-		return ""
-	}
-	message = fmt.Sprintf("%s\nЗалитые изменения:", message)
-
+func (t *PipelineCommitsType) Body() string {
+	message := ""
 	for _, commit := range t.Commits {
 		if len(commit.ParentIDs) > 1 {
 			continue
 		}
 		message = fmt.Sprintf("%s\n📄 %s", message, fm.Link(commit.Title, commit.WebURL))
 	}
+
+	return message
+}
+
+func (t *PipelineCommitsType) Make() string {
+	message, err := t.Header()
+	if err != nil {
+		return ""
+	}
+	message = fmt.Sprintf("%s\nЗалитые изменения:%s", message, t.Body())
 
 	return fmt.Sprintf("%s\n%s", message, t.Footer())
 }
@@ -130,13 +141,8 @@ type PipelineLogType struct {
 	Commits []*gitlab.Commit
 }
 
-func (t *PipelineLogType) Make() string {
-	message, err := t.Header()
-
-	if err != nil {
-		return ""
-	}
-
+func (t *PipelineLogType) Body() string {
+	message := ""
 	commits := map[string]map[string][]map[string]interface{}{}
 
 	for _, commit := range t.Commits {
@@ -191,7 +197,7 @@ func (t *PipelineLogType) Make() string {
 			continue
 		}
 
-		subMessage := fmt.Sprintf("\n*%s*:", v)
+		subMessage := fmt.Sprintf("\n%s:", fm.Bold(v))
 		for scopeKey, dataCommits := range data {
 			subMessage = fmt.Sprintf("%s\n    %s:", subMessage, fm.Underline(scopeKey))
 			for _, commit := range dataCommits {
@@ -218,7 +224,17 @@ func (t *PipelineLogType) Make() string {
 		message = fmt.Sprintf("%s%s", message, subMessage)
 	}
 
-	return fmt.Sprintf("%s\n%s", message, t.Footer())
+	return message
+}
+
+func (t *PipelineLogType) Make() string {
+	message, err := t.Header()
+
+	if err != nil {
+		return ""
+	}
+
+	return fmt.Sprintf("%s%s\n%s", message, t.Body(), t.Footer())
 }
 
 type MergeDefaultType struct {

@@ -80,17 +80,22 @@ func serve(cmd *cobra.Command, args []string) {
 					//}
 					//command.Test(ids...)
 
-					var keyboard [][]tgbotapi.KeyboardButton
-
-					keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.KeyboardButton{
-						Text: "WebApp?",
-						WebApp: &tgbotapi.WebAppInfo{
-							URL: "https://gitlab-cicd-tgbot.atwinta.online/",
+					keyboard := tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.InlineKeyboardButton{
+							Text: "WebApp?",
+							WebApp: &tgbotapi.WebAppInfo{
+								URL: "https://gitlab-cicd-tgbot.atwinta.online/",
+							},
 						},
-					}))
+						tgbotapi.InlineKeyboardButton{
+							Text: "Pipeline?",
+							WebApp: &tgbotapi.WebAppInfo{
+								URL: "https://gitlab-cicd-tgbot.atwinta.online/project/338/pipeline/23885",
+							},
+						},
+					)
 
-					telegram.SendMessageById(update.Message.Chat.ID, "test", tgbotapi.NewReplyKeyboard(keyboard...), nil)
-
+					telegram.SendMessageById(update.Message.Chat.ID, "qweqwe", tgbotapi.NewInlineKeyboardMarkup(keyboard), nil)
 					break
 				case "say":
 					deleteMessageConfig := tgbotapi.NewDeleteMessage(update.Message.Chat.ID, update.Message.MessageID)

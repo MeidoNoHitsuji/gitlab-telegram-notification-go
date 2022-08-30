@@ -9,7 +9,7 @@ import (
 func New(Secret string) *mux.Router {
 	router := mux.NewRouter()
 	router.HandleFunc("/", WebIndex).Methods("GET")
-
+	router.HandleFunc("/project/{project_id}/pipeline/{pipeline_id}", WebPipeline).Methods("GET")
 	wh := webhook.Webhook{
 		Secret: Secret,
 		EventsToAccept: []gitlab.EventType{

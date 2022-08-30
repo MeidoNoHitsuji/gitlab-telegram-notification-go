@@ -16,3 +16,7 @@ func Underline(text string) string {
 func Italic(text string) string {
 	return fmt.Sprintf("<i>%s</i>", text)
 }
+
+func Bold(text string) string {
+	return fmt.Sprintf("<b>%s</b>", text)
+}
