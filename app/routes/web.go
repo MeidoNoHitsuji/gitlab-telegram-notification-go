@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func WebIndex(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +53,6 @@ func WebPipeline(w http.ResponseWriter, r *http.Request) {
 		Commits: commits,
 	}
 
-	w.Write([]byte(data.Body()))
+	w.Write([]byte(strings.ReplaceAll(data.Body(), "\n", "</br>")))
 	w.WriteHeader(200)
 }
