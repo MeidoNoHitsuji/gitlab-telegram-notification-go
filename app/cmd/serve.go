@@ -66,11 +66,11 @@ func serve(cmd *cobra.Command, args []string) {
 					if err == nil {
 						telegram.SendMessageById(update.Message.Chat.ID, text, nil, nil)
 					} else {
-						telegram.SendMessageById(update.Message.Chat.ID, fmt.Sprintf("Ошибка\\! Не удалось подписаться по причине: %s", err), nil, nil)
+						telegram.SendMessageById(update.Message.Chat.ID, fmt.Sprintf("Ошибка! Не удалось подписаться по причине: %s", err), nil, nil)
 					}
 					break
 				case "start":
-					telegram.SendMessageById(update.Message.Chat.ID, "Привет\\! Мой список команд доступен тебе через `/`\\.", nil, nil)
+					telegram.SendMessageById(update.Message.Chat.ID, "Привет! Мой список команд доступен тебе через <code>/</code>.", nil, nil)
 					break
 				case "test":
 					//tgbotapi.
@@ -104,7 +104,7 @@ func serve(cmd *cobra.Command, args []string) {
 					telegram.SendMessageById(update.Message.Chat.ID, update.Message.CommandArguments(), nil, update.Message.Entities)
 					break
 				default:
-					telegram.SendMessageById(update.Message.Chat.ID, "Я не понимаю, что ты от меня хочешь\\.", nil, nil)
+					telegram.SendMessageById(update.Message.Chat.ID, "Я не понимаю, что ты от меня хочешь.", nil, nil)
 					break
 				}
 			} else {

@@ -19,7 +19,7 @@ func SendMessage(channel *models.TelegramChannel, message string, keyboard inter
 	}
 
 	msgConf := tgbotapi.NewMessage(channel.ID, message)
-	msgConf.ParseMode = tgbotapi.ModeMarkdownV2
+	msgConf.ParseMode = tgbotapi.ModeHTML
 	msgConf.DisableWebPagePreview = true
 	msgConf.Entities = entities
 
