@@ -53,6 +53,6 @@ func WebPipeline(w http.ResponseWriter, r *http.Request) {
 		Commits: commits,
 	}
 
-	w.Write([]byte(strings.ReplaceAll(data.Body(), "\n", "</br>")))
+	w.Write([]byte(strings.ReplaceAll(strings.TrimSpace(data.Body()), "\n", "<br>")))
 	w.WriteHeader(200)
 }
