@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/spf13/cobra"
@@ -80,22 +81,16 @@ func serve(cmd *cobra.Command, args []string) {
 					//}
 					//command.Test(ids...)
 
-					//keyboard := tgbotapi.NewInlineKeyboardRow(
-					//	tgbotapi.InlineKeyboardButton{
-					//		Text: "WebApp?",
-					//		WebApp: &tgbotapi.WebAppInfo{
-					//			URL: "https://gitlab-cicd-tgbot.atwinta.online/",
-					//		},
-					//	},
-					//	tgbotapi.InlineKeyboardButton{
-					//		Text: "Pipeline?",
-					//		WebApp: &tgbotapi.WebAppInfo{
-					//			URL: "https://gitlab-cicd-tgbot.atwinta.online/project/338/pipeline/23885",
-					//		},
-					//	},
+					//data := telegram.NewTomatoFailType(0)
+					//out, _ := json.Marshal(data)
+					//
+					//keyboard := tgbotapi.NewInlineKeyboardMarkup(
+					//	tgbotapi.NewInlineKeyboardRow(
+					//		tgbotapi.NewInlineKeyboardButtonData("🍅", string(out)),
+					//	),
 					//)
 					//
-					//telegram.SendMessageById(update.Message.Chat.ID, "qweqwe", tgbotapi.NewInlineKeyboardMarkup(keyboard), nil)
+					//telegram.SendMessageById(update.Message.Chat.ID, "qweqwe", keyboard, nil)
 					break
 				case "say":
 					deleteMessageConfig := tgbotapi.NewDeleteMessage(update.Message.Chat.ID, update.Message.MessageID)
@@ -126,14 +121,33 @@ func serve(cmd *cobra.Command, args []string) {
 
 		} else if update.CallbackQuery != nil {
 
-			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
-			if _, err := bot.Request(callback); err != nil {
-				panic(err)
+			var jsonMap telegram.TomatoFailType
+
+			err := json.Unmarshal([]byte(update.CallbackQuery.Data), &jsonMap)
+			if err != nil {
+				fmt.Println(err)
+				return
 			}
 
-			msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Data)
-			if _, err := bot.Send(msg); err != nil {
-				panic(err)
+			if jsonMap.FuncName == "" {
+				return
+			}
+
+			switch jsonMap.FuncName {
+			case telegram.TomatoFailName:
+
+				data := telegram.NewTomatoFailType(jsonMap.Count + 1)
+				out, _ := json.Marshal(data)
+
+				keyboard := tgbotapi.NewInlineKeyboardRow(
+					tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%d 🍅", jsonMap.Count+1), string(out)),
+				)
+
+				msg := tgbotapi.NewEditMessageTextAndMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, update.CallbackQuery.Message.Text, tgbotapi.NewInlineKeyboardMarkup(keyboard))
+
+				if _, err := bot.Send(msg); err != nil {
+					fmt.Println(err)
+				}
 			}
 		}
 	}

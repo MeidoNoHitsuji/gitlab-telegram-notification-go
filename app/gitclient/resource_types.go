@@ -1,6 +1,7 @@
 package gitclient
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -9,6 +10,7 @@ import (
 	"gitlab-telegram-notification-go/helper"
 	fm "gitlab-telegram-notification-go/helper/formater"
 	"gitlab-telegram-notification-go/models"
+	"gitlab-telegram-notification-go/telegram"
 	"os"
 	"strings"
 )
@@ -107,6 +109,23 @@ func (t *PipelineDefaultType) Make() string {
 	message = fmt.Sprintf("%s\nСборочная линия:%s", message, t.Body())
 
 	return fmt.Sprintf("%s\n%s", message, t.Footer())
+}
+
+func (t *PipelineDefaultType) Keyboard() *tgbotapi.InlineKeyboardMarkup {
+	if t.Event.ObjectAttributes.Status != "failed" {
+		return nil
+	}
+
+	data := telegram.NewTomatoFailType(0)
+	out, _ := json.Marshal(data)
+
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("🍅", string(out)),
+		),
+	)
+
+	return &keyboard
 }
 
 type PipelineCommitsType struct {

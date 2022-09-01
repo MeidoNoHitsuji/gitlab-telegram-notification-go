@@ -2,6 +2,7 @@ package gitclient
 
 import (
 	"fmt"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/database"
 	fm "gitlab-telegram-notification-go/helper/formater"
@@ -159,29 +160,33 @@ func Handler(event interface{}) error {
 		}
 
 		for _, subscribe := range subscribes {
-
+			var keyboard *tgbotapi.InlineKeyboardMarkup
 			switch data := data.(type) {
 			case PipelineDefaultType:
 				data.Subscribe = &subscribe
 				message = data.Make()
+				keyboard = data.Keyboard()
 				break
 			case PipelineCommitsType:
 				data.Subscribe = &subscribe
 				message = data.Make()
+				keyboard = data.Keyboard()
 				break
 			case PipelineLogType:
 				data.Subscribe = &subscribe
 				message = data.Make()
+				keyboard = data.Keyboard()
 				break
 			default:
 				message = ""
+				keyboard = nil
 			}
 
 			if message == "" {
 				continue
 			}
 
-			telegram.SendMessage(&subscribe.TelegramChannel, message, nil, nil)
+			telegram.SendMessage(&subscribe.TelegramChannel, message, keyboard, nil)
 		}
 	}
 	return nil
