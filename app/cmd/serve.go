@@ -143,7 +143,16 @@ func serve(cmd *cobra.Command, args []string) {
 					tgbotapi.NewInlineKeyboardButtonData(fmt.Sprintf("%d 🍅", jsonMap.Count+1), string(out)),
 				)
 
-				msg := tgbotapi.NewEditMessageTextAndMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, update.CallbackQuery.Message.Text, tgbotapi.NewInlineKeyboardMarkup(keyboard))
+				msg := tgbotapi.NewEditMessageTextAndMarkup(
+					update.CallbackQuery.Message.Chat.ID,
+					update.CallbackQuery.Message.MessageID,
+					update.CallbackQuery.Message.Text,
+					tgbotapi.NewInlineKeyboardMarkup(keyboard),
+				)
+
+				msg.Entities = update.CallbackQuery.Message.Entities
+				msg.ParseMode = tgbotapi.ModeHTML
+				msg.DisableWebPagePreview = true
 
 				if _, err := bot.Send(msg); err != nil {
 					fmt.Println(err)
