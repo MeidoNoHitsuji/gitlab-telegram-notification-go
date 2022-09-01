@@ -151,7 +151,7 @@ func serve(cmd *cobra.Command, args []string) {
 				)
 
 				msg.Entities = update.CallbackQuery.Message.Entities
-				msg.ParseMode = tgbotapi.ModeHTML
+				//msg.ParseMode = tgbotapi.ModeHTML
 				msg.DisableWebPagePreview = true
 
 				if _, err := bot.Send(msg); err != nil {
