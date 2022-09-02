@@ -188,14 +188,17 @@ func Handler(event interface{}) error {
 			}
 
 			_, err := telegram.SendMessage(&subscribe.TelegramChannel, message, keyboard, nil)
-			fmt.Println(err)
+
+			var errMap map[string]interface{}
 			out, _ := json.Marshal(err)
-			fmt.Println(string(out))
-			if err != nil {
-				switch err := err.(type) {
-				case tgbotapi.Error:
-					fmt.Println(err.Code)
-					if err.Code == 400 {
+
+			err = json.Unmarshal(out, &errMap)
+
+			if err == nil {
+				code, ok := errMap["Code"]
+
+				if ok {
+					if code == 400 {
 						switch data := data.(type) {
 						case PipelineCommitsType:
 							data.WithPipelineButton = true
