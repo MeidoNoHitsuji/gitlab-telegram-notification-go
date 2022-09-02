@@ -34,8 +34,7 @@ func SendMessage(channel *models.TelegramChannel, message string, keyboard inter
 	msg, err := bot.Send(msgConf)
 
 	if err != nil {
-		log.Println(err)
-		return nil, err
+		return &msg, err
 	}
 
 	return &msg, nil

@@ -164,17 +164,17 @@ func Handler(event interface{}) error {
 			switch data := data.(type) {
 			case PipelineDefaultType:
 				data.Subscribe = &subscribe
-				message = data.Make()
+				message = data.Make(false)
 				keyboard = data.Keyboard()
 				break
 			case PipelineCommitsType:
 				data.Subscribe = &subscribe
-				message = data.Make()
+				message = data.Make(false)
 				keyboard = data.Keyboard()
 				break
 			case PipelineLogType:
 				data.Subscribe = &subscribe
-				message = data.Make()
+				message = data.Make(false)
 				keyboard = data.Keyboard()
 				break
 			default:
@@ -186,7 +186,29 @@ func Handler(event interface{}) error {
 				continue
 			}
 
-			telegram.SendMessage(&subscribe.TelegramChannel, message, keyboard, nil)
+			_, err := telegram.SendMessage(&subscribe.TelegramChannel, message, keyboard, nil)
+
+			if err != nil {
+				switch err := err.(type) {
+				case tgbotapi.Error:
+					if err.Code == 400 {
+						switch data := data.(type) {
+						case PipelineCommitsType:
+							data.WithPipelineButton = true
+							message = data.Make(true)
+							keyboard = data.Keyboard()
+							telegram.SendMessage(&subscribe.TelegramChannel, message, keyboard, nil)
+							break
+						case PipelineLogType:
+							data.WithPipelineButton = true
+							message = data.Make(true)
+							keyboard = data.Keyboard()
+							telegram.SendMessage(&subscribe.TelegramChannel, message, keyboard, nil)
+							break
+						}
+					}
+				}
+			}
 		}
 	}
 	return nil

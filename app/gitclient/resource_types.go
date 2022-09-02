@@ -30,8 +30,9 @@ var types = map[string]string{
 }
 
 type PipelineDefaultType struct {
-	Event     *gitlab.PipelineEvent
-	Subscribe *models.Subscribe
+	Event              *gitlab.PipelineEvent
+	Subscribe          *models.Subscribe
+	WithPipelineButton bool
 }
 
 func (t PipelineDefaultType) Header() (string, error) {
@@ -101,7 +102,7 @@ func (t *PipelineDefaultType) Body() string {
 	return message
 }
 
-func (t *PipelineDefaultType) Make() string {
+func (t *PipelineDefaultType) Make(byFail bool) string {
 	message, err := t.Header()
 	if err != nil {
 		return ""
@@ -112,20 +113,28 @@ func (t *PipelineDefaultType) Make() string {
 }
 
 func (t *PipelineDefaultType) Keyboard() *tgbotapi.InlineKeyboardMarkup {
-	if t.Event.ObjectAttributes.Status != "failed" {
-		return nil
+	if t.Event.ObjectAttributes.Status == "failed" {
+		data := telegram.NewTomatoFailType(0)
+		out, _ := json.Marshal(data)
+
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("🍅", string(out)),
+			),
+		)
+
+		return &keyboard
+	} else if t.Event.ObjectAttributes.Status == "success" && t.WithPipelineButton {
+		keyboard := tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonURL("Логи", fmt.Sprintf("%s/project/%d/pipeline/%d", os.Getenv("WEBHOOK_DOMAIN"), t.Event.Project.ID, t.Event.ObjectAttributes.ID)),
+			),
+		)
+
+		return &keyboard
 	}
 
-	data := telegram.NewTomatoFailType(0)
-	out, _ := json.Marshal(data)
-
-	keyboard := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("🍅", string(out)),
-		),
-	)
-
-	return &keyboard
+	return nil
 }
 
 type PipelineCommitsType struct {
@@ -145,12 +154,17 @@ func (t *PipelineCommitsType) Body() string {
 	return message
 }
 
-func (t *PipelineCommitsType) Make() string {
+func (t *PipelineCommitsType) Make(byFail bool) string {
 	message, err := t.Header()
 	if err != nil {
 		return ""
 	}
-	message = fmt.Sprintf("%s\nЗалитые изменения:%s", message, t.Body())
+
+	if byFail {
+		message = fmt.Sprintf("%s\nЛог уведомлений слишком большой. Чтобы увидеть все возможные изменения используйте прикреплённую кнопку.", message)
+	} else {
+		message = fmt.Sprintf("%s\nЗалитые изменения:%s", message, t.Body())
+	}
 
 	return fmt.Sprintf("%s\n%s", message, t.Footer())
 }
@@ -246,14 +260,19 @@ func (t *PipelineLogType) Body() string {
 	return message
 }
 
-func (t *PipelineLogType) Make() string {
+func (t *PipelineLogType) Make(byFail bool) string {
 	message, err := t.Header()
 
 	if err != nil {
 		return ""
 	}
 
-	return fmt.Sprintf("%s%s\n%s", message, t.Body(), t.Footer())
+	if byFail {
+		return fmt.Sprintf("%s%s\n%s", message, "\nЛог уведомлений слишком большой. Чтобы увидеть все возможные изменения используйте прикреплённую кнопку.", t.Footer())
+	} else {
+		return fmt.Sprintf("%s%s\n%s", message, t.Body(), t.Footer())
+	}
+
 }
 
 type MergeDefaultType struct {
