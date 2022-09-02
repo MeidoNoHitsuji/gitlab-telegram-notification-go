@@ -26,6 +26,7 @@ func migrate(cmd *cobra.Command, args []string) error {
 		&models.Subscribe{},
 		&models.SubscribeEvent{},
 		&models.UserTelegramChannelAction{},
+		&models.UserToken{},
 	}
 
 	if err := db.AutoMigrate(ms...); err != nil {

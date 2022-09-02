@@ -1,4 +1,4 @@
-package webhook
+package routes
 
 import (
 	"errors"
