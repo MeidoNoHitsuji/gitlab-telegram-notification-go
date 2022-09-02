@@ -195,10 +195,11 @@ func Handler(event interface{}) error {
 			err = json.Unmarshal(out, &errMap)
 
 			if err == nil {
+				fmt.Println(errMap)
 				code, ok := errMap["Code"]
-
+				fmt.Println(code)
 				if ok {
-					if code == 400 {
+					if code.(int) == 400 {
 						switch data := data.(type) {
 						case PipelineCommitsType:
 							data.WithPipelineButton = true
@@ -215,6 +216,8 @@ func Handler(event interface{}) error {
 						}
 					}
 				}
+			} else {
+				fmt.Println(err)
 			}
 		}
 	}
