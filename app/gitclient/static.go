@@ -1,6 +1,7 @@
 package gitclient
 
 import (
+	"encoding/json"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/xanzy/go-gitlab"
@@ -187,10 +188,13 @@ func Handler(event interface{}) error {
 			}
 
 			_, err := telegram.SendMessage(&subscribe.TelegramChannel, message, keyboard, nil)
-
+			fmt.Println(err)
+			out, _ := json.Marshal(err)
+			fmt.Println(out)
 			if err != nil {
 				switch err := err.(type) {
 				case tgbotapi.Error:
+					fmt.Println(err.Code)
 					if err.Code == 400 {
 						switch data := data.(type) {
 						case PipelineCommitsType:
