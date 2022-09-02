@@ -190,7 +190,7 @@ func Handler(event interface{}) error {
 			_, err := telegram.SendMessage(&subscribe.TelegramChannel, message, keyboard, nil)
 			fmt.Println(err)
 			out, _ := json.Marshal(err)
-			fmt.Println(out)
+			fmt.Println(string(out))
 			if err != nil {
 				switch err := err.(type) {
 				case tgbotapi.Error:
