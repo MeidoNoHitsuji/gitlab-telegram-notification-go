@@ -6,11 +6,11 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/xanzy/go-gitlab"
+	"gitlab-telegram-notification-go/actions/callbacks"
 	"gitlab-telegram-notification-go/gitclient/parser"
 	"gitlab-telegram-notification-go/helper"
 	fm "gitlab-telegram-notification-go/helper/formater"
 	"gitlab-telegram-notification-go/models"
-	"gitlab-telegram-notification-go/telegram"
 	"os"
 	"strings"
 )
@@ -29,13 +29,32 @@ var types = map[string]string{
 	"other":    "Другое",
 }
 
-type PipelineDefaultType struct {
-	Event              *gitlab.PipelineEvent
-	Subscribe          *models.Subscribe
-	WithPipelineButton bool
+type PipelineDefaultInterface interface {
+	Header() (string, error)
+	Body() string
+	Footer() string
+	Make(byFail bool) string
+	Keyboard(withPipelineButton bool) *tgbotapi.InlineKeyboardMarkup
+
+	SetSubscribe(Subscribe *models.Subscribe)
 }
 
-func (t PipelineDefaultType) Header() (string, error) {
+type PipelineDefaultType struct {
+	Event     *gitlab.PipelineEvent
+	Subscribe *models.Subscribe
+}
+
+func NewPipelineDefaultType(event *gitlab.PipelineEvent) *PipelineDefaultType {
+	return &PipelineDefaultType{
+		Event: event,
+	}
+}
+
+func (t *PipelineDefaultType) SetSubscribe(Subscribe *models.Subscribe) {
+	t.Subscribe = Subscribe
+}
+
+func (t *PipelineDefaultType) Header() (string, error) {
 	var message string
 	if t.Event.ObjectAttributes.Status == "failed" {
 		message = fmt.Sprintf("🧩❌ PipeLine завершился ошибкой! | %s (%d)", fm.Link(t.Event.Project.Name, t.Event.Project.WebURL), t.Event.Project.ID)
@@ -63,7 +82,7 @@ func (t PipelineDefaultType) Header() (string, error) {
 	return message, nil
 }
 
-func (t PipelineDefaultType) Footer() string {
+func (t *PipelineDefaultType) Footer() string {
 	var message string
 	if t.Event.MergeRequest.ID != 0 {
 		message = fmt.Sprintf("\n🌳: %s → %s", tgbotapi.EscapeText(tgbotapi.ModeHTML, t.Event.MergeRequest.SourceBranch), tgbotapi.EscapeText(tgbotapi.ModeHTML, t.Event.MergeRequest.TargetBranch))
@@ -112,10 +131,9 @@ func (t *PipelineDefaultType) Make(byFail bool) string {
 	return fmt.Sprintf("%s\n%s", message, t.Footer())
 }
 
-func (t *PipelineDefaultType) Keyboard() *tgbotapi.InlineKeyboardMarkup {
+func (t *PipelineDefaultType) Keyboard(withPipelineButton bool) *tgbotapi.InlineKeyboardMarkup {
 	if t.Event.ObjectAttributes.Status == "failed" {
-		data := telegram.NewTomatoFailType(0)
-		out, _ := json.Marshal(data)
+		out, _ := json.Marshal(callbacks.NewTomatoFailType(0))
 
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
@@ -124,7 +142,7 @@ func (t *PipelineDefaultType) Keyboard() *tgbotapi.InlineKeyboardMarkup {
 		)
 
 		return &keyboard
-	} else if t.Event.ObjectAttributes.Status == "success" && t.WithPipelineButton {
+	} else if t.Event.ObjectAttributes.Status == "success" && withPipelineButton {
 		keyboard := tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonURL("Логи", fmt.Sprintf("%s/project/%d/pipeline/%d", os.Getenv("WEBHOOK_DOMAIN"), t.Event.Project.ID, t.Event.ObjectAttributes.ID)),
@@ -140,6 +158,15 @@ func (t *PipelineDefaultType) Keyboard() *tgbotapi.InlineKeyboardMarkup {
 type PipelineCommitsType struct {
 	PipelineDefaultType
 	Commits []*gitlab.Commit
+}
+
+func NewPipelineCommitsType(event *gitlab.PipelineEvent, commits []*gitlab.Commit) *PipelineCommitsType {
+	return &PipelineCommitsType{
+		PipelineDefaultType: PipelineDefaultType{
+			Event: event,
+		},
+		Commits: commits,
+	}
 }
 
 func (t *PipelineCommitsType) Body() string {
@@ -172,6 +199,15 @@ func (t *PipelineCommitsType) Make(byFail bool) string {
 type PipelineLogType struct {
 	PipelineDefaultType
 	Commits []*gitlab.Commit
+}
+
+func NewPipelineLogType(event *gitlab.PipelineEvent, commits []*gitlab.Commit) *PipelineLogType {
+	return &PipelineLogType{
+		PipelineDefaultType: PipelineDefaultType{
+			Event: event,
+		},
+		Commits: commits,
+	}
 }
 
 func (t *PipelineLogType) Body() string {

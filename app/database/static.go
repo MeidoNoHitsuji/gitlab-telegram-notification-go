@@ -151,3 +151,52 @@ func GetEventsByProjectId(projectId int) []string {
 
 	return helper.Unique(events)
 }
+
+func GetUserActionInChannel(telegramId int64, username string) string {
+	var userAction models.UserTelegramChannelAction
+
+	db := Instant()
+	builder := db.Model(&models.UserTelegramChannelAction{}).Joins("inner join users as user on user.id = user_telegram_channel_actions.user_id")
+	builder = builder.Where("user_telegram_channel_actions.telegram_channel_id = ?", telegramId)
+	builder = builder.Where("user.username = ?", username)
+	builder = builder.Find(&userAction)
+
+	if builder.RowsAffected == 0 {
+		return ""
+	}
+
+	return userAction.Action
+}
+
+// UpdateUserActionInChannel TODO: Пофиксить эту хуиту, она не работает!!
+func UpdateUserActionInChannel(telegramId int64, username string, action string) error {
+	db := Instant()
+
+	obj := models.UserTelegramChannelAction{}
+
+	builder := db.Model(&models.UserTelegramChannelAction{}).Joins("inner join users as user on user.id = user_telegram_channel_actions.user_id")
+	builder = builder.Where("user_telegram_channel_actions.telegram_channel_id = ?", telegramId)
+	builder = builder.Where("user.username = ?", username)
+	builder = builder.Find(&obj)
+
+	if builder.RowsAffected == 0 {
+		user := &models.User{
+			Username: username,
+		}
+
+		r := db.Model(&models.User{}).Find(&user)
+
+		if r.RowsAffected == 0 {
+			return errors.New("Такой пользователь не найден!")
+		}
+
+		obj.Action = action
+		obj.TelegramChannelId = telegramId
+		obj.UserId = user.ID
+		db.Create(obj)
+	} else {
+		db.Model(&models.UserTelegramChannelAction{}).Where(obj).Update("action", action)
+	}
+
+	return nil
+}

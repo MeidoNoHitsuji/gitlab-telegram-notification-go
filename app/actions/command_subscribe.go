@@ -1,7 +1,8 @@
-package command
+package actions
 
 import (
 	"errors"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/database"
@@ -11,6 +12,32 @@ import (
 	"log"
 	"strings"
 )
+
+const SubscribeActionType ActionNameType = "subscribe"
+
+type SubscribeAction struct {
+	BaseAction
+}
+
+func (act *SubscribeAction) Active(update tgbotapi.Update) error {
+	text, _, err := Subscribe(update.Message.Chat.ID, update.Message.CommandArguments())
+	if err != nil {
+		return NewErrorForUser(fmt.Sprintf("Ошибка! Не удалось подписаться по причине: %s", err))
+	} else {
+		telegram.SendMessageById(update.Message.Chat.ID, text, nil, nil)
+		return nil
+	}
+}
+
+func NewSubscribeAction() *SelectProjectAction {
+	return &SelectProjectAction{
+		BaseAction: BaseAction{
+			ID:       SubscribeActionType,
+			InitBy:   InitByCommand,
+			InitText: "subscribe",
+		},
+	}
+}
 
 func getProjectFromArguments(arguments string) (*gitlab.Project, []string, error) {
 	git := gitclient.Instant()
@@ -73,32 +100,4 @@ func Subscribe(telegramId int64, arguments string) (string, *gitlab.Project, err
 	}
 
 	return text, project, nil
-}
-
-func Test(telegramId ...int64) {
-	senderId := telegramId[0]
-
-	projects := database.GetProjectsByTelegramIds(telegramId...)
-
-	var keyboard [][]tgbotapi.KeyboardButton
-	lines := len(projects) / 3
-
-	if len(projects)%3 > 0 {
-		lines++
-	}
-
-	for i := 0; i < lines; i++ {
-		pr := projects[i*3 : ((i + 1) * 3)]
-		var keyboardButtons []tgbotapi.KeyboardButton
-		for j := 0; j < len(pr); j++ {
-			keyboardButtons = append(keyboardButtons, tgbotapi.NewKeyboardButton(pr[j].Name))
-		}
-		keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(keyboardButtons...))
-	}
-
-	keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(
-		tgbotapi.NewKeyboardButton("Отмена"),
-	))
-
-	telegram.SendMessageById(senderId, "Это какая-то хуита?", tgbotapi.NewReplyKeyboard(keyboard...), nil)
 }

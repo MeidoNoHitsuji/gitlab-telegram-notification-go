@@ -40,6 +40,32 @@ func SendMessage(channel *models.TelegramChannel, message string, keyboard inter
 	return &msg, nil
 }
 
+func UpdateMessage(message *tgbotapi.Message, text string, keyboard interface{}, entities []tgbotapi.MessageEntity) (*tgbotapi.Message, error) {
+	bot := Instant()
+
+	editConf := tgbotapi.NewEditMessageText(
+		message.Chat.ID,
+		message.MessageID,
+		text,
+	)
+
+	editConf.DisableWebPagePreview = true
+	editConf.Entities = entities
+
+	if keyboard != nil {
+		tmp := keyboard.(tgbotapi.InlineKeyboardMarkup)
+		editConf.ReplyMarkup = &tmp
+	}
+
+	msg, err := bot.Send(editConf)
+
+	if err != nil {
+		return &msg, err
+	}
+
+	return &msg, nil
+}
+
 func SendMessageById(telegramId int64, message string, keyboard interface{}, entities []tgbotapi.MessageEntity) (*tgbotapi.Message, error) {
 	db := database.Instant()
 
@@ -60,6 +86,34 @@ func SendMessageById(telegramId int64, message string, keyboard interface{}, ent
 	}
 
 	return SendMessage(&channel, message, keyboard, entities)
+}
+
+func UpdateMessageById(message *tgbotapi.Message, text string, keyboard interface{}, entities []tgbotapi.MessageEntity) (*tgbotapi.Message, error) {
+	db := database.Instant()
+
+	var channel models.TelegramChannel
+
+	result := db.Where(&models.TelegramChannel{ID: message.Chat.ID}).Find(&channel)
+
+	if result.Error != nil {
+		log.Println(result.Error)
+		return nil, result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		err := fmt.Sprintf("Канал с Id равному %d не найден.", message.Chat.ID)
+		log.Println(err)
+
+		return nil, errors.New(err)
+	}
+
+	if !channel.Active {
+		err := fmt.Sprintf("Чат с Id %d недоступен!", channel.ID)
+		log.Println(err)
+		return nil, errors.New(err)
+	}
+
+	return UpdateMessage(message, text, keyboard, entities)
 }
 
 func SendMessageByUsername(username string, message string, keyboard interface{}, entities []tgbotapi.MessageEntity) (*tgbotapi.Message, error) {

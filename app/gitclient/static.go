@@ -3,7 +3,6 @@ package gitclient
 import (
 	"encoding/json"
 	"fmt"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/database"
 	fm "gitlab-telegram-notification-go/helper/formater"
@@ -128,11 +127,9 @@ func Handler(event interface{}) error {
 			BranchName:     event.ObjectAttributes.Ref,
 		})
 
-		var data interface{}
+		var data PipelineDefaultInterface
 
-		data = PipelineDefaultType{
-			Event: event,
-		}
+		data = NewPipelineDefaultType(event)
 
 		if event.ObjectAttributes.Status == "success" {
 			if event.ObjectAttributes.Ref == "develop" {
@@ -142,10 +139,7 @@ func Handler(event interface{}) error {
 					break
 				}
 
-				data = PipelineCommitsType{
-					PipelineDefaultType: data.(PipelineDefaultType),
-					Commits:             commits,
-				}
+				data = NewPipelineCommitsType(event, commits)
 			} else if event.ObjectAttributes.Ref == "master" || event.ObjectAttributes.Ref == "release" {
 				commits, err := GetCommitsLastPipeline(event.Project.ID, event.ObjectAttributes.BeforeSHA, event.ObjectAttributes.SHA)
 
@@ -153,35 +147,15 @@ func Handler(event interface{}) error {
 					break
 				}
 
-				data = PipelineLogType{
-					PipelineDefaultType: data.(PipelineDefaultType),
-					Commits:             commits,
-				}
+				data = NewPipelineLogType(event, commits)
 			}
 		}
 
 		for _, subscribe := range subscribes {
-			var keyboard *tgbotapi.InlineKeyboardMarkup
-			switch data := data.(type) {
-			case PipelineDefaultType:
-				data.Subscribe = &subscribe
-				message = data.Make(false)
-				keyboard = data.Keyboard()
-				break
-			case PipelineCommitsType:
-				data.Subscribe = &subscribe
-				message = data.Make(false)
-				keyboard = data.Keyboard()
-				break
-			case PipelineLogType:
-				data.Subscribe = &subscribe
-				message = data.Make(false)
-				keyboard = data.Keyboard()
-				break
-			default:
-				message = ""
-				keyboard = nil
-			}
+			data.SetSubscribe(&subscribe)
+
+			message = data.Make(false)
+			keyboard := data.Keyboard(false)
 
 			if message == "" {
 				continue
@@ -198,20 +172,10 @@ func Handler(event interface{}) error {
 				code, ok := errMap["Code"]
 				if ok {
 					if code.(float64) == 400 {
-						switch data := data.(type) {
-						case PipelineCommitsType:
-							data.WithPipelineButton = true
-							message = data.Make(true)
-							keyboard = data.Keyboard()
-							telegram.SendMessage(&subscribe.TelegramChannel, message, keyboard, nil)
-							break
-						case PipelineLogType:
-							data.WithPipelineButton = true
-							message = data.Make(true)
-							keyboard = data.Keyboard()
-							telegram.SendMessage(&subscribe.TelegramChannel, message, keyboard, nil)
-							break
-						}
+						message = data.Make(true)
+						keyboard = data.Keyboard(true)
+						telegram.SendMessage(&subscribe.TelegramChannel, message, keyboard, nil)
+						break
 					}
 				}
 			} else {
