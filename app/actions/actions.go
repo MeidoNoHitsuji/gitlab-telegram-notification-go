@@ -4,6 +4,7 @@ import (
 	"errors"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"gitlab-telegram-notification-go/database"
+	"gitlab-telegram-notification-go/telegram"
 )
 
 type ActionErrorType error
@@ -22,11 +23,13 @@ func GetActualActions() []BaseInterface {
 	return []BaseInterface{
 		NewBackTextAction(),
 		NewBackCallbackAction(),
+		NewTestAction(),
 		NewStartAction(),
 		NewSayAction(),
 		NewTomatoFailAction(),
 		NewSubscribesAction(),
 		NewSelectProjectAction(),
+		NewSelectProjectSettingsAction(),
 
 		NewSubscribeAction(),
 	}
@@ -36,6 +39,7 @@ func Active(update tgbotapi.Update) ActionErrorType {
 	for _, action := range GetActualActions() {
 		if action.Validate(update) {
 
+			//TODO: Решить проблему с передачей CallbackData в Active
 			err := action.Active(update)
 
 			if err != nil {
@@ -51,23 +55,28 @@ func Active(update tgbotapi.Update) ActionErrorType {
 }
 
 func UpdateActualAction(update tgbotapi.Update, action BaseInterface) {
-	a := action.GetActionName()
-	var message *tgbotapi.Message
+	actionName := action.GetActionName()
 
-	if a != "" {
+	var chatId int64
+	var username string
+
+	if actionName != "" {
+
 		if update.CallbackQuery != nil {
-			message = update.CallbackQuery.Message
+			chatId = update.CallbackQuery.Message.Chat.ID
+			username = update.CallbackQuery.From.UserName
 		} else if update.Message != nil {
-			message = update.Message
+			chatId = update.Message.Chat.ID
+			username = update.Message.From.UserName
+		} else {
+			return
 		}
 
-		if message != nil {
-			database.UpdateUserActionInChannel(
-				message.Chat.ID,
-				message.From.UserName,
-				string(a),
-			)
-		}
+		database.UpdateUserActionInChannel(
+			chatId,
+			username,
+			string(actionName),
+		)
 	}
 }
 
@@ -89,8 +98,8 @@ func GetActualAction(update tgbotapi.Update) ActionNameType {
 	return ""
 }
 
-//TODO: Сносить старый кейборд
 func BackAction(update tgbotapi.Update) error {
+	message, _ := telegram.GetMessageFromUpdate(update)
 	actions := GetActualActions()
 	actualAction := GetActualAction(update)
 	var action BaseInterface
@@ -126,12 +135,12 @@ func BackAction(update tgbotapi.Update) error {
 	}
 
 	if beforeAction != nil {
+		telegram.SendRemoveKeyboard(message.Chat.ID, false)
+		beforeAction.SetIsBack()
 		err := beforeAction.Active(update)
 		if err != nil {
 			return err
 		}
-
-		//TODO: Добавить отдельную функцию у на удаления кейборда
 
 		UpdateActualAction(update, beforeAction)
 	}

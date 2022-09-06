@@ -66,6 +66,26 @@ func UpdateMessage(message *tgbotapi.Message, text string, keyboard interface{},
 	return &msg, nil
 }
 
+func SendRemoveKeyboard(telegramId int64, selective bool) {
+	bot := Instant()
+
+	delConf := tgbotapi.NewMessage(telegramId, "_")
+	delConf.ReplyMarkup = tgbotapi.NewRemoveKeyboard(selective)
+
+	msg, err := bot.Send(delConf)
+
+	if err != nil {
+		return
+	}
+
+	mg := tgbotapi.NewDeleteMessage(
+		msg.Chat.ID,
+		msg.MessageID,
+	)
+
+	bot.Request(mg)
+}
+
 func SendMessageById(telegramId int64, message string, keyboard interface{}, entities []tgbotapi.MessageEntity) (*tgbotapi.Message, error) {
 	db := database.Instant()
 
@@ -135,4 +155,14 @@ func SendMessageByUsername(username string, message string, keyboard interface{}
 	}
 
 	return SendMessage(&user.TelegramChannel, message, keyboard, entities)
+}
+
+func GetMessageFromUpdate(update tgbotapi.Update) (*tgbotapi.Message, bool) {
+	if update.Message != nil {
+		return update.Message, false
+	} else if update.CallbackQuery != nil {
+		return update.CallbackQuery.Message, true
+	}
+
+	return nil, false
 }

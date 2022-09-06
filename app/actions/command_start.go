@@ -2,6 +2,7 @@ package actions
 
 import (
 	"encoding/json"
+	"errors"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"gitlab-telegram-notification-go/actions/callbacks"
 	"gitlab-telegram-notification-go/telegram"
@@ -25,6 +26,12 @@ func NewStartAction() *StartAction {
 
 func (act *StartAction) Active(update tgbotapi.Update) error {
 
+	message, botMessage := telegram.GetMessageFromUpdate(update)
+
+	if message == nil {
+		return errors.New("Неизвестно откуда прилетел запрос.")
+	}
+
 	subscribeData := callbacks.NewSubscribesType()
 
 	out, err := json.Marshal(subscribeData)
@@ -38,12 +45,21 @@ func (act *StartAction) Active(update tgbotapi.Update) error {
 		//TODO: Настройки
 	)
 
-	telegram.SendMessageById(
-		update.Message.Chat.ID,
-		"Привет! Что поделаем?",
-		tgbotapi.NewInlineKeyboardMarkup(keyboard),
-		nil,
-	)
+	if botMessage {
+		telegram.UpdateMessageById(
+			message,
+			"Привет! Что поделаем?",
+			tgbotapi.NewInlineKeyboardMarkup(keyboard),
+			nil,
+		)
+	} else {
+		telegram.SendMessageById(
+			message.Chat.ID,
+			"Привет! Что поделаем?",
+			tgbotapi.NewInlineKeyboardMarkup(keyboard),
+			nil,
+		)
+	}
 
 	return nil
 }

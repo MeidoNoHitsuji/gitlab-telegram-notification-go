@@ -10,12 +10,9 @@ import (
 type ActionNameType string
 
 const (
-	SelectProjectOption ActionNameType = "select_project_option"
 	SelectWebHookEvent  ActionNameType = "select_webhook_event"
 	SelectFilter        ActionNameType = "select_filter"
 	EditParameterFilter ActionNameType = "edit_parameter_filter"
-
-	TestActionType ActionNameType = "test"
 )
 
 type ActionInitByType string
@@ -31,6 +28,7 @@ type BaseInterface interface {
 	Active(update tgbotapi.Update) error
 	GetActionName() ActionNameType
 	GetBeforeAction() ActionNameType
+	SetIsBack() //TODO: Исправить, ибо не работает!!
 }
 
 // BaseAction это абстрактный тип для всех экшнов.
@@ -63,10 +61,20 @@ type BaseAction struct {
 	// nil - любой action
 	// ActionNameType - соответствует имени экшна
 	AfterAction ActionNameType
+
+	// IsBack отвечает является ли выполнение текущего Action'а возвратом
+	IsBack bool
+
+	// BackData это даные, которые были получены при кнопке Отмена, если IsBack = true
+	BackData interface{}
 }
 
 func (act *BaseAction) GetActionName() ActionNameType {
 	return act.ID
+}
+
+func (act *BaseAction) SetIsBack() {
+	act.IsBack = true
 }
 
 func (act *BaseAction) GetBeforeAction() ActionNameType {
@@ -109,20 +117,6 @@ func (act *BaseAction) Validate(update tgbotapi.Update) bool {
 	return false
 }
 
-// SelectProjectOptionAction вызывается когда надо выбирать действие для проекта
-type SelectProjectOptionAction struct {
-	BaseAction
-}
-
-func NewSelectProjectOptionAction() *SelectProjectOptionAction {
-	return &SelectProjectOptionAction{
-		BaseAction: BaseAction{
-			ID:           SelectProjectOption,
-			BeforeAction: SelectProjectActionType,
-		},
-	}
-}
-
 // SelectWebHookEventAction вызывается когда надо выбрать имя ивента
 type SelectWebHookEventAction struct {
 	BaseAction
@@ -132,7 +126,7 @@ func NewSelectWebHookEventAction() *SelectWebHookEventAction {
 	return &SelectWebHookEventAction{
 		BaseAction: BaseAction{
 			ID:           SelectWebHookEvent,
-			BeforeAction: SelectProjectOption,
+			BeforeAction: SelectProjectSettings,
 		},
 	}
 }

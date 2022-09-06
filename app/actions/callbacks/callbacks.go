@@ -3,10 +3,10 @@ package callbacks
 type CallbackFuncName string
 
 const (
-	TomatoFailNameFuncName CallbackFuncName = "tomato_fail"
-	SubscribesFuncName     CallbackFuncName = "subscribes"
-	//SelectProjectFuncName  CallbackFuncName = "select_project"
-	BackFuncName CallbackFuncName = "back"
+	TomatoFailNameFuncName        CallbackFuncName = "tomato_fail"
+	SubscribesFuncName            CallbackFuncName = "subscribes"
+	BackFuncName                  CallbackFuncName = "back"
+	SelectProjectSettingsFuncName CallbackFuncName = "select_project_settings"
 )
 
 type DefaultType struct {
@@ -39,20 +39,22 @@ func NewSubscribesType() *SubscribesType {
 	}
 }
 
-//type SelectProjectType struct {
-//	DefaultType
-//}
-//
-//func NewSelectProjectType() *SelectProjectType {
-//	return &SelectProjectType{
-//		DefaultType: DefaultType{
-//			FuncName: SelectProjectFuncName,
-//		},
-//	}
-//}
+type SelectProjectSettingsType struct {
+	DefaultType
+	ProjectId int
+}
+
+func NewSelectProjectSettingsType() *SelectProjectSettingsType {
+	return &SelectProjectSettingsType{
+		DefaultType: DefaultType{
+			FuncName: SelectProjectSettingsFuncName,
+		},
+	}
+}
 
 type BackType struct {
 	DefaultType
+	BackData interface{}
 }
 
 func NewBackType() *BackType {

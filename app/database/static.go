@@ -168,13 +168,12 @@ func GetUserActionInChannel(telegramId int64, username string) string {
 	return userAction.Action
 }
 
-// UpdateUserActionInChannel TODO: Пофиксить эту хуиту, она не работает!!
 func UpdateUserActionInChannel(telegramId int64, username string, action string) error {
 	db := Instant()
 
 	obj := models.UserTelegramChannelAction{}
 
-	builder := db.Model(&models.UserTelegramChannelAction{}).Joins("inner join users as user on user.id = user_telegram_channel_actions.user_id")
+	builder := db.Model(&models.UserTelegramChannelAction{}).Joins("inner join users as user on user_telegram_channel_actions.user_id = user.id")
 	builder = builder.Where("user_telegram_channel_actions.telegram_channel_id = ?", telegramId)
 	builder = builder.Where("user.username = ?", username)
 	builder = builder.Find(&obj)

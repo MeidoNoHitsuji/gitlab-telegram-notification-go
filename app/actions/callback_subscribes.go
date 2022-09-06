@@ -27,20 +27,15 @@ func NewSubscribesAction() *SubscribesAction {
 }
 
 func (act *SubscribesAction) Active(update tgbotapi.Update) error {
+	message, _ := telegram.GetMessageFromUpdate(update)
 
-	var message *tgbotapi.Message
-
-	if update.Message != nil {
-		message = update.Message
-	} else if update.CallbackQuery != nil {
-		message = update.CallbackQuery.Message
-	} else {
+	if message == nil {
 		return errors.New("Неизвестно откуда прилетел запрос.")
 	}
 
 	projects := database.GetProjectsByTelegramIds(message.Chat.ID)
 
-	var keyboard [][]tgbotapi.KeyboardButton
+	var keyboardRows [][]tgbotapi.KeyboardButton
 	lines := len(projects) / 3
 
 	if len(projects)%3 > 0 {
@@ -53,18 +48,20 @@ func (act *SubscribesAction) Active(update tgbotapi.Update) error {
 		for j := 0; j < len(pr); j++ {
 			keyboardButtons = append(keyboardButtons, tgbotapi.NewKeyboardButton(pr[j].Name))
 		}
-		keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(keyboardButtons...))
+		keyboardRows = append(keyboardRows, tgbotapi.NewKeyboardButtonRow(keyboardButtons...))
 	}
 
-	keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(
+	keyboardRows = append(keyboardRows, tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton("Отмена"),
 	))
 
+	keyboard := tgbotapi.NewReplyKeyboard(keyboardRows...)
+	keyboard.OneTimeKeyboard = true
+
 	telegram.SendMessageById(
 		message.Chat.ID,
-		`Чтобы добавить/обновить подписку вам необходимо выбрать проект для этого.
-Если вы не находите необходимый вам проект в списке, то введите его slug или id.`,
-		tgbotapi.NewReplyKeyboard(keyboard...),
+		"Чтобы добавить/обновить подписку вам необходимо выбрать проект для этого\nЕсли вы не находите необходимый вам проект в списке, то введите его slug или id.",
+		keyboard,
 		nil,
 	)
 
