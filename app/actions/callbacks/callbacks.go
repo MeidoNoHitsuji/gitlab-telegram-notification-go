@@ -10,7 +10,7 @@ const (
 )
 
 type DefaultType struct {
-	FuncName CallbackFuncName `json:"func_name"`
+	FuncName CallbackFuncName `json:"fn"`
 }
 
 type TomatoFailType struct {
@@ -41,26 +41,28 @@ func NewSubscribesType() *SubscribesType {
 
 type SelectProjectSettingsType struct {
 	DefaultType
-	ProjectId int
+	ProjectId int `json:"pi"`
 }
 
-func NewSelectProjectSettingsType() *SelectProjectSettingsType {
+func NewSelectProjectSettingsType(projectId int) *SelectProjectSettingsType {
 	return &SelectProjectSettingsType{
 		DefaultType: DefaultType{
 			FuncName: SelectProjectSettingsFuncName,
 		},
+		ProjectId: projectId,
 	}
 }
 
 type BackType struct {
 	DefaultType
-	BackData interface{}
+	BackData any `json:"bd"`
 }
 
-func NewBackType() *BackType {
+func NewBackType(backData any) *BackType {
 	return &BackType{
 		DefaultType: DefaultType{
 			FuncName: BackFuncName,
 		},
+		BackData: backData,
 	}
 }

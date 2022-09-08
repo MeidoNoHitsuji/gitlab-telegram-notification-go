@@ -15,14 +15,47 @@ const SelectProjectActionType ActionNameType = "select_project"
 
 type SelectProjectAction struct {
 	BaseAction
+	BackData SelectProjectBackData `json:"bd"`
 }
 
 type SelectProjectBackData struct {
-	projectId int
+	ProjectId int `json:"pi"`
+}
+
+func (act *SelectProjectAction) SetIsBack(update tgbotapi.Update) error {
+
+	err := act.BaseAction.SetIsBack(update)
+
+	if err != nil {
+		return err
+	}
+
+	var tmp map[string]interface{}
+	err = json.Unmarshal([]byte(update.CallbackQuery.Data), &tmp)
+
+	if err != nil {
+		return err
+	}
+
+	backData, ok := tmp["bd"]
+
+	if !ok {
+		return errors.New("Параметры не найдены.")
+	}
+
+	out, _ := json.Marshal(backData)
+	err = json.Unmarshal(out, &act.BackData)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
-	message, _ := telegram.GetMessageFromUpdate(update)
+	fmt.Println("asdsa")
+	message, botMessage := telegram.GetMessageFromUpdate(update)
 
 	if message == nil {
 		return errors.New("Неизвестно откуда прилетел запрос.")
@@ -33,8 +66,7 @@ func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
 	git := gitclient.Instant()
 
 	if act.IsBack {
-		backData := act.BackData.(SelectProjectBackData)
-		project, _, err = git.Projects.GetProject(backData.projectId, &gitlab.GetProjectOptions{})
+		project, _, err = git.Projects.GetProject(act.BackData.ProjectId, &gitlab.GetProjectOptions{})
 
 		if err != nil {
 			return err
@@ -56,15 +88,14 @@ func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
 		project = projects[0]
 	}
 
-	backData := callbacks.NewBackType()
+	backData := callbacks.NewBackType(nil)
 	backOut, err := json.Marshal(backData)
 
 	if err != nil {
 		return err
 	}
 
-	settingsData := callbacks.NewSelectProjectSettingsType()
-
+	settingsData := callbacks.NewSelectProjectSettingsType(project.ID)
 	settingsOut, err := json.Marshal(settingsData)
 
 	if err != nil {
@@ -82,12 +113,21 @@ func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
 		tgbotapi.NewInlineKeyboardButtonData("Отмена", string(backOut)),
 	)
 
-	telegram.SendMessageById(
-		message.Chat.ID,
-		fmt.Sprintf("Был выбран проект: %s", project.Name),
-		tgbotapi.NewInlineKeyboardMarkup(keyboard, keyboardBack),
-		nil,
-	)
+	if botMessage {
+		telegram.UpdateMessageById(
+			message,
+			fmt.Sprintf("Был выбран проект: %s", project.Name),
+			tgbotapi.NewInlineKeyboardMarkup(keyboard, keyboardBack),
+			nil,
+		)
+	} else {
+		telegram.SendMessageById(
+			message.Chat.ID,
+			fmt.Sprintf("Был выбран проект: %s", project.Name),
+			tgbotapi.NewInlineKeyboardMarkup(keyboard, keyboardBack),
+			nil,
+		)
+	}
 
 	return nil
 }

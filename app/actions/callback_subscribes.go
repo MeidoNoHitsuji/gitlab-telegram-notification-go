@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"encoding/json"
 	"errors"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"gitlab-telegram-notification-go/actions/callbacks"
@@ -12,7 +13,7 @@ const SubscribesActionType ActionNameType = "subscribes"
 
 type SubscribesAction struct {
 	BaseAction
-	CallbackData *callbacks.SubscribesType
+	CallbackData *callbacks.SubscribesType `json:"callback_data"`
 }
 
 func NewSubscribesAction() *SubscribesAction {
@@ -24,6 +25,14 @@ func NewSubscribesAction() *SubscribesAction {
 			BeforeAction:         Start,
 		},
 	}
+}
+
+func (act *SubscribesAction) Validate(update tgbotapi.Update) bool {
+	if !act.BaseAction.Validate(update) {
+		return false
+
+	}
+	return json.Unmarshal([]byte(update.CallbackQuery.Data), &act.CallbackData) == nil
 }
 
 func (act *SubscribesAction) Active(update tgbotapi.Update) error {

@@ -10,7 +10,15 @@ import (
 
 type TomatoFailAction struct {
 	BaseAction
-	CallbackData *callbacks.TomatoFailType
+	CallbackData *callbacks.TomatoFailType `json:"callback_data"`
+}
+
+func (act *TomatoFailAction) Validate(update tgbotapi.Update) bool {
+	if !act.BaseAction.Validate(update) {
+		return false
+
+	}
+	return json.Unmarshal([]byte(update.CallbackQuery.Data), &act.CallbackData) == nil
 }
 
 func (act *TomatoFailAction) Active(update tgbotapi.Update) error {

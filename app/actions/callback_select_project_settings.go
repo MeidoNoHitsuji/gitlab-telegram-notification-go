@@ -3,7 +3,6 @@ package actions
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/actions/callbacks"
@@ -16,7 +15,7 @@ var SelectProjectSettings ActionNameType = "select_project_settings"
 // SelectProjectSettingsAction вызывается когда надо выбирать действие для проекта
 type SelectProjectSettingsAction struct {
 	BaseAction
-	CallbackData *callbacks.SelectProjectSettingsType
+	CallbackData *callbacks.SelectProjectSettingsType `json:"callback_data"`
 }
 
 func NewSelectProjectSettingsAction() *SelectProjectSettingsAction {
@@ -30,14 +29,20 @@ func NewSelectProjectSettingsAction() *SelectProjectSettingsAction {
 	}
 }
 
+func (act *SelectProjectSettingsAction) Validate(update tgbotapi.Update) bool {
+	if !act.BaseAction.Validate(update) {
+		return false
+
+	}
+	return json.Unmarshal([]byte(update.CallbackQuery.Data), &act.CallbackData) == nil
+}
+
 func (act *SelectProjectSettingsAction) Active(update tgbotapi.Update) error {
 	message, _ := telegram.GetMessageFromUpdate(update)
 
 	if message == nil {
 		return errors.New("Неизвестно откуда прилетел запрос.")
 	}
-
-	fmt.Println(act.CallbackData)
 
 	git := gitclient.Instant()
 	project, _, err := git.Projects.GetProject(act.CallbackData.ProjectId, &gitlab.GetProjectOptions{})
@@ -46,11 +51,8 @@ func (act *SelectProjectSettingsAction) Active(update tgbotapi.Update) error {
 		return err
 	}
 
-	//TODO: Проверить работоспособность
-	backData := callbacks.NewBackType()
-	backData.BackData = SelectProjectBackData{
-		projectId: project.ID,
-	}
+	tmp := callbacks.NewSelectProjectSettingsType(project.ID)
+	backData := callbacks.NewBackType(tmp)
 
 	backOut, err := json.Marshal(backData)
 

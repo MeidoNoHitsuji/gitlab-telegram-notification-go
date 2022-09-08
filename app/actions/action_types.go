@@ -28,7 +28,7 @@ type BaseInterface interface {
 	Active(update tgbotapi.Update) error
 	GetActionName() ActionNameType
 	GetBeforeAction() ActionNameType
-	SetIsBack() //TODO: Исправить, ибо не работает!!
+	SetIsBack(update tgbotapi.Update) error
 }
 
 // BaseAction это абстрактный тип для всех экшнов.
@@ -53,7 +53,7 @@ type BaseAction struct {
 	InitCallbackFuncName callbacks.CallbackFuncName
 
 	// CallbackData это данные, которые были получены, если action триггернулся на  InitByCallback
-	CallbackData *callbacks.DefaultType
+	CallbackData *callbacks.DefaultType `json:"callback_data"`
 
 	// AfterAction это условие, которое означающее предыдущий Action
 	//
@@ -66,15 +66,16 @@ type BaseAction struct {
 	IsBack bool
 
 	// BackData это даные, которые были получены при кнопке Отмена, если IsBack = true
-	BackData interface{}
+	BackData any `json:"bd"`
 }
 
 func (act *BaseAction) GetActionName() ActionNameType {
 	return act.ID
 }
 
-func (act *BaseAction) SetIsBack() {
+func (act *BaseAction) SetIsBack(update tgbotapi.Update) error {
 	act.IsBack = true
+	return nil
 }
 
 func (act *BaseAction) GetBeforeAction() ActionNameType {
@@ -107,6 +108,7 @@ func (act *BaseAction) Validate(update tgbotapi.Update) bool {
 			return false
 		}
 
+		// Данное преобразование нужно, чтобы вытянуть имя функции
 		err := json.Unmarshal([]byte(update.CallbackQuery.Data), &act.CallbackData)
 		if err != nil {
 			return false

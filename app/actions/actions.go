@@ -81,21 +81,22 @@ func UpdateActualAction(update tgbotapi.Update, action BaseInterface) {
 }
 
 func GetActualAction(update tgbotapi.Update) ActionNameType {
-	var message *tgbotapi.Message
+	var chatId int64
+	var username string
 	if update.CallbackQuery != nil {
-		message = update.CallbackQuery.Message
+		chatId = update.CallbackQuery.Message.Chat.ID
+		username = update.CallbackQuery.From.UserName
 	} else if update.Message != nil {
-		message = update.Message
+		chatId = update.Message.Chat.ID
+		username = update.Message.From.UserName
+	} else {
+		return ""
 	}
 
-	if message != nil {
-		return ActionNameType(database.GetUserActionInChannel(
-			message.Chat.ID,
-			message.From.UserName,
-		))
-	}
-
-	return ""
+	return ActionNameType(database.GetUserActionInChannel(
+		chatId,
+		username,
+	))
 }
 
 func BackAction(update tgbotapi.Update) error {
@@ -136,8 +137,12 @@ func BackAction(update tgbotapi.Update) error {
 
 	if beforeAction != nil {
 		telegram.SendRemoveKeyboard(message.Chat.ID, false)
-		beforeAction.SetIsBack()
-		err := beforeAction.Active(update)
+		err := beforeAction.SetIsBack(update)
+		if err != nil {
+			return err
+		}
+
+		err = beforeAction.Active(update)
 		if err != nil {
 			return err
 		}
