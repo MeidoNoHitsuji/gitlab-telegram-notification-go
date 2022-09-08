@@ -11,7 +11,6 @@ type ActionNameType string
 
 const (
 	SelectWebHookEvent  ActionNameType = "select_webhook_event"
-	SelectFilter        ActionNameType = "select_filter"
 	EditParameterFilter ActionNameType = "edit_parameter_filter"
 )
 
@@ -133,30 +132,16 @@ func NewSelectWebHookEventAction() *SelectWebHookEventAction {
 	}
 }
 
-// SelectFilterActon выбор соответствующего фильтра. Или же создание нового.
-type SelectFilterActon struct {
-	BaseAction
-}
-
-func NewSelectFilterActon() *SelectFilterActon {
-	return &SelectFilterActon{
-		BaseAction: BaseAction{
-			ID:           SelectFilter,
-			BeforeAction: SelectWebHookEvent,
-		},
-	}
-}
-
-// EditParameterFilterAction редактирование параметров фильтра
-type EditParameterFilterAction struct {
-	BaseAction
-}
-
-func NewEditParameterFilterAction() *EditParameterFilterAction {
-	return &EditParameterFilterAction{
-		BaseAction: BaseAction{
-			ID:           EditParameterFilter,
-			BeforeAction: SelectFilter,
-		},
-	}
-}
+//// EditParameterFilterAction редактирование параметров фильтра
+//type EditParameterFilterAction struct {
+//	BaseAction
+//}
+//
+//func NewEditParameterFilterAction() *EditParameterFilterAction {
+//	return &EditParameterFilterAction{
+//		BaseAction: BaseAction{
+//			ID:           EditParameterFilter,
+//			BeforeAction: SelectFilter,
+//		},
+//	}
+//}

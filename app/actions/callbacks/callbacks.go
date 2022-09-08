@@ -7,6 +7,10 @@ const (
 	SubscribesFuncName            CallbackFuncName = "subscribes"
 	BackFuncName                  CallbackFuncName = "back"
 	SelectProjectSettingsFuncName CallbackFuncName = "select_project_settings"
+	SelectFilterFuncName          CallbackFuncName = "select_filter"
+	CreateFilterFuncName          CallbackFuncName = "create_filter"
+	ChoiceWebhookFilterFuncName   CallbackFuncName = "webhook_filter" //TODO: Создать callback На это
+	EditFilterFuncName            CallbackFuncName = "edit_filter"
 )
 
 type DefaultType struct {
@@ -47,7 +51,63 @@ type SelectProjectSettingsType struct {
 func NewSelectProjectSettingsType(projectId int) *SelectProjectSettingsType {
 	return &SelectProjectSettingsType{
 		DefaultType: DefaultType{
+			FuncName: SelectFilterFuncName,
+		},
+		ProjectId: projectId,
+	}
+}
+
+type SelectFilterType struct {
+	DefaultType
+	ProjectId int `json:"pi"`
+}
+
+func NewSelectFilterType(projectId int) *SelectFilterType {
+	return &SelectFilterType{
+		DefaultType: DefaultType{
 			FuncName: SelectProjectSettingsFuncName,
+		},
+		ProjectId: projectId,
+	}
+}
+
+type CreateFilterType struct {
+	DefaultType
+	ProjectId int `json:"pi"`
+}
+
+func NewCreateFilterType(projectId int) *CreateFilterType {
+	return &CreateFilterType{
+		DefaultType: DefaultType{
+			FuncName: CreateFilterFuncName,
+		},
+		ProjectId: projectId,
+	}
+}
+
+type ChoiceWebhookFilterType struct {
+	DefaultType
+	ProjectId int `json:"pi"`
+}
+
+func NewChoiceWebhookFilterType(projectId int) *ChoiceWebhookFilterType {
+	return &ChoiceWebhookFilterType{
+		DefaultType: DefaultType{
+			FuncName: ChoiceWebhookFilterFuncName,
+		},
+		ProjectId: projectId,
+	}
+}
+
+type EditFilterType struct {
+	DefaultType
+	ProjectId int `json:"pi"`
+}
+
+func NewEditFilterType(projectId int) *EditFilterType {
+	return &EditFilterType{
+		DefaultType: DefaultType{
+			FuncName: EditFilterFuncName,
 		},
 		ProjectId: projectId,
 	}

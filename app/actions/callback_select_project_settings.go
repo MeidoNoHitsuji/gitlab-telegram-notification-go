@@ -10,7 +10,7 @@ import (
 	"gitlab-telegram-notification-go/telegram"
 )
 
-var SelectProjectSettings ActionNameType = "select_project_settings"
+const SelectProjectSettings ActionNameType = "select_project_settings"
 
 // SelectProjectSettingsAction вызывается когда надо выбирать действие для проекта
 type SelectProjectSettingsAction struct {
@@ -51,10 +51,15 @@ func (act *SelectProjectSettingsAction) Active(update tgbotapi.Update) error {
 		return err
 	}
 
-	tmp := callbacks.NewSelectProjectSettingsType(project.ID)
-	backData := callbacks.NewBackType(tmp)
+	backOut, err := json.Marshal(
+		callbacks.NewBackType(
+			callbacks.NewSelectProjectSettingsType(project.ID),
+		),
+	)
 
-	backOut, err := json.Marshal(backData)
+	if err != nil {
+		return err
+	}
 
 	keyboardBack := tgbotapi.NewInlineKeyboardRow(
 		tgbotapi.NewInlineKeyboardButtonData("Отмена", string(backOut)),
@@ -62,7 +67,7 @@ func (act *SelectProjectSettingsAction) Active(update tgbotapi.Update) error {
 
 	telegram.UpdateMessageById(
 		message,
-		"Ты выбрал настройки",
+		"Ты выбрал настройки. Теперь выбери, хочешь ты обновить имеющийся фильтр или добавить новый?",
 		tgbotapi.NewInlineKeyboardMarkup(keyboardBack),
 		nil,
 	)

@@ -54,7 +54,6 @@ func (act *SelectProjectAction) SetIsBack(update tgbotapi.Update) error {
 }
 
 func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
-	fmt.Println("asdsa")
 	message, botMessage := telegram.GetMessageFromUpdate(update)
 
 	if message == nil {
