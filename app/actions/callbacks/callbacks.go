@@ -8,6 +8,7 @@ const (
 	BackFuncName                  CallbackFuncName = "back"
 	SelectProjectSettingsFuncName CallbackFuncName = "select_project_settings"
 	SelectFilterFuncName          CallbackFuncName = "select_filter"
+	ChangeActiveFuncName          CallbackFuncName = "change_active"
 	CreateFilterFuncName          CallbackFuncName = "create_filter"
 	ChoiceWebhookFilterFuncName   CallbackFuncName = "webhook_filter" //TODO: Создать callback На это
 	EditFilterFuncName            CallbackFuncName = "edit_filter"
@@ -52,6 +53,20 @@ func NewSelectProjectSettingsType(projectId int) *SelectProjectSettingsType {
 	return &SelectProjectSettingsType{
 		DefaultType: DefaultType{
 			FuncName: SelectFilterFuncName,
+		},
+		ProjectId: projectId,
+	}
+}
+
+type ChangeActiveProjectType struct {
+	DefaultType
+	ProjectId int `json:"pi"`
+}
+
+func NewChangeActiveProjectType(projectId int) *SelectProjectSettingsType {
+	return &SelectProjectSettingsType{
+		DefaultType: DefaultType{
+			FuncName: ChangeActiveFuncName,
 		},
 		ProjectId: projectId,
 	}

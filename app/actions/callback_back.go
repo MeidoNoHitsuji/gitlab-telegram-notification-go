@@ -24,8 +24,8 @@ func (act *BackCallbackAction) Validate(update tgbotapi.Update) bool {
 func NewBackCallbackAction() *BackCallbackAction {
 	return &BackCallbackAction{
 		BaseAction: BaseAction{
-			InitBy:               InitByCallback,
-			InitCallbackFuncName: callbacks.BackFuncName,
+			InitBy:                []ActionInitByType{InitByCallback},
+			InitCallbackFuncNames: []callbacks.CallbackFuncName{callbacks.BackFuncName},
 		},
 	}
 }

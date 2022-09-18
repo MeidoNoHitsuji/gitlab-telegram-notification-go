@@ -16,7 +16,7 @@ func NewTestAction() *TestAction {
 	return &TestAction{
 		BaseAction: BaseAction{
 			ID:       TestActionType,
-			InitBy:   InitByCommand,
+			InitBy:   []ActionInitByType{InitByCommand},
 			InitText: "test",
 		},
 	}

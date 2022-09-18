@@ -16,7 +16,7 @@ func NewSayAction() *SayAction {
 	return &SayAction{
 		BaseAction: BaseAction{
 			ID:       Say,
-			InitBy:   InitByCommand,
+			InitBy:   []ActionInitByType{InitByCommand},
 			InitText: "say",
 		},
 	}

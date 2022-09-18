@@ -21,12 +21,13 @@ func NewErrorForUser(s string) *ErrorForUser {
 
 func GetActualActions() []BaseInterface {
 	return []BaseInterface{
+		NewTomatoFailAction(),
+
 		NewBackTextAction(),
 		NewBackCallbackAction(),
 		NewTestAction(),
 		NewStartAction(),
 		NewSayAction(),
-		NewTomatoFailAction(),
 		NewSubscribesAction(),
 		NewSelectProjectAction(),
 		NewSelectProjectSettingsAction(),

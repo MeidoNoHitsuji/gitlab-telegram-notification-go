@@ -16,10 +16,10 @@ type EditFilterActon struct {
 func NewEditFilterActon() *EditFilterActon {
 	return &EditFilterActon{
 		BaseAction: BaseAction{
-			ID:                   EditFilter,
-			InitBy:               InitByCallback,
-			InitCallbackFuncName: callbacks.EditFilterFuncName,
-			BeforeAction:         SelectFilter,
+			ID:                    EditFilter,
+			InitBy:                []ActionInitByType{InitByCallback},
+			InitCallbackFuncNames: []callbacks.CallbackFuncName{callbacks.EditFilterFuncName},
+			BeforeAction:          SelectFilter,
 		},
 	}
 }

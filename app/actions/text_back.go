@@ -13,7 +13,7 @@ type BackTextAction struct {
 func NewBackTextAction() *BackTextAction {
 	return &BackTextAction{
 		BaseAction: BaseAction{
-			InitBy:   InitByText,
+			InitBy:   []ActionInitByType{InitByText},
 			InitText: "Отмена",
 		},
 	}

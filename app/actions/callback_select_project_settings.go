@@ -21,10 +21,10 @@ type SelectProjectSettingsAction struct {
 func NewSelectProjectSettingsAction() *SelectProjectSettingsAction {
 	return &SelectProjectSettingsAction{
 		BaseAction: BaseAction{
-			ID:                   SelectProjectSettings,
-			InitBy:               InitByCallback,
-			InitCallbackFuncName: callbacks.SelectProjectSettingsFuncName,
-			BeforeAction:         SelectProjectActionType,
+			ID:                    SelectProjectSettings,
+			InitBy:                []ActionInitByType{InitByCallback},
+			InitCallbackFuncNames: []callbacks.CallbackFuncName{callbacks.SelectProjectSettingsFuncName},
+			BeforeAction:          SelectProjectActionType,
 		},
 	}
 }

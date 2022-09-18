@@ -18,7 +18,7 @@ func NewStartAction() *StartAction {
 	return &StartAction{
 		BaseAction: BaseAction{
 			ID:       Start,
-			InitBy:   InitByCommand,
+			InitBy:   []ActionInitByType{InitByCommand},
 			InitText: "start",
 		},
 	}

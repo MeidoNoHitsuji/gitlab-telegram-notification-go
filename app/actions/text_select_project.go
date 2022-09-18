@@ -7,7 +7,9 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/actions/callbacks"
+	"gitlab-telegram-notification-go/database"
 	"gitlab-telegram-notification-go/gitclient"
+	"gitlab-telegram-notification-go/models"
 	"gitlab-telegram-notification-go/telegram"
 )
 
@@ -15,7 +17,8 @@ const SelectProjectActionType ActionNameType = "select_project"
 
 type SelectProjectAction struct {
 	BaseAction
-	BackData SelectProjectBackData `json:"bd"`
+	CallbackData *callbacks.ChangeActiveProjectType `json:"callback_data"`
+	BackData     SelectProjectBackData              `json:"bd"`
 }
 
 type SelectProjectBackData struct {
@@ -53,6 +56,20 @@ func (act *SelectProjectAction) SetIsBack(update tgbotapi.Update) error {
 	return nil
 }
 
+func (act *SelectProjectAction) Validate(update tgbotapi.Update) bool {
+	if !act.BaseAction.Validate(update) {
+		return false
+
+	}
+
+	if act.InitializedBy == InitByCallback {
+		return json.Unmarshal([]byte(update.CallbackQuery.Data), &act.CallbackData) == nil
+	} else {
+		return true
+	}
+}
+
+//TODO: Удалять подписку, а не проект при отключение проекта!!
 func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
 	message, botMessage := telegram.GetMessageFromUpdate(update)
 
@@ -66,6 +83,12 @@ func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
 
 	if act.IsBack {
 		project, _, err = git.Projects.GetProject(act.BackData.ProjectId, &gitlab.GetProjectOptions{})
+
+		if err != nil {
+			return err
+		}
+	} else if act.InitializedBy == InitByCallback {
+		project, _, err = git.Projects.GetProject(act.CallbackData.ProjectId, &gitlab.GetProjectOptions{})
 
 		if err != nil {
 			return err
@@ -87,6 +110,16 @@ func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
 		project = projects[0]
 	}
 
+	db := database.Instant()
+
+	projectObj := models.Project{
+		ID: project.ID,
+	}
+
+	db.Unscoped().FirstOrCreate(&projectObj, models.Project{
+		Name: project.Name,
+	})
+
 	backData := callbacks.NewBackType(nil)
 	backOut, err := json.Marshal(backData)
 
@@ -101,10 +134,33 @@ func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
 		return err
 	}
 
-	fmt.Println(string(settingsOut))
+	changeActiveData := callbacks.NewChangeActiveProjectType(project.ID)
+	changeActive, err := json.Marshal(changeActiveData)
+
+	if err != nil {
+		return err
+	}
+
+	var textAct string
+
+	if act.InitializedBy == InitByCallback {
+		if !projectObj.DeletedAt.Valid {
+			db.Delete(&projectObj)
+			textAct = "Вкл"
+		} else {
+			db.Exec("UPDATE projects SET deleted_at = NULL WHERE id = ?", projectObj.ID)
+			textAct = "Выкл"
+		}
+	} else {
+		if !projectObj.DeletedAt.Valid {
+			textAct = "Выкл"
+		} else {
+			textAct = "Вкл"
+		}
+	}
 
 	keyboard := tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("Вкл/Выкл", "{}"),
+		tgbotapi.NewInlineKeyboardButtonData(textAct, string(changeActive)),
 		tgbotapi.NewInlineKeyboardButtonData("Настройки", string(settingsOut)),
 	)
 
@@ -134,9 +190,13 @@ func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
 func NewSelectProjectAction() *SelectProjectAction {
 	return &SelectProjectAction{
 		BaseAction: BaseAction{
-			ID:          SelectProjectActionType,
-			InitBy:      InitByText,
-			AfterAction: SubscribesActionType,
+			ID: SelectProjectActionType,
+			InitBy: []ActionInitByType{
+				InitByCallback,
+				InitByText,
+			},
+			AfterAction:           SubscribesActionType,
+			InitCallbackFuncNames: []callbacks.CallbackFuncName{callbacks.ChangeActiveFuncName},
 		},
 	}
 }

@@ -16,10 +16,10 @@ type CreateFilterActon struct {
 func NewCreateFilterActon() *CreateFilterActon {
 	return &CreateFilterActon{
 		BaseAction: BaseAction{
-			ID:                   CreateFilter,
-			InitBy:               InitByCallback,
-			InitCallbackFuncName: callbacks.CreateFilterFuncName,
-			BeforeAction:         SelectFilter,
+			ID:                    CreateFilter,
+			InitBy:                []ActionInitByType{InitByCallback},
+			InitCallbackFuncNames: []callbacks.CallbackFuncName{callbacks.CreateFilterFuncName},
+			BeforeAction:          SelectFilter,
 		},
 	}
 }

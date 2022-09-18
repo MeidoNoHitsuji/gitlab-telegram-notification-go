@@ -19,10 +19,10 @@ type SubscribesAction struct {
 func NewSubscribesAction() *SubscribesAction {
 	return &SubscribesAction{
 		BaseAction: BaseAction{
-			ID:                   SubscribesActionType,
-			InitBy:               InitByCallback,
-			InitCallbackFuncName: callbacks.SubscribesFuncName,
-			BeforeAction:         Start,
+			ID:                    SubscribesActionType,
+			InitBy:                []ActionInitByType{InitByCallback},
+			InitCallbackFuncNames: []callbacks.CallbackFuncName{callbacks.SubscribesFuncName},
+			BeforeAction:          Start,
 		},
 	}
 }
@@ -42,7 +42,7 @@ func (act *SubscribesAction) Active(update tgbotapi.Update) error {
 		return errors.New("Неизвестно откуда прилетел запрос.")
 	}
 
-	projects := database.GetProjectsByTelegramIds(message.Chat.ID)
+	projects := database.GetProjectsByTelegramIdsWithDeleted(message.Chat.ID)
 
 	var keyboardRows [][]tgbotapi.KeyboardButton
 	lines := len(projects) / 3

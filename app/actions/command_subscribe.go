@@ -33,7 +33,7 @@ func NewSubscribeAction() *SelectProjectAction {
 	return &SelectProjectAction{
 		BaseAction: BaseAction{
 			ID:       SubscribeActionType,
-			InitBy:   InitByCommand,
+			InitBy:   []ActionInitByType{InitByCommand},
 			InitText: "subscribe",
 		},
 	}

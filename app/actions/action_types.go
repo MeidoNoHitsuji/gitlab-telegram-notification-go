@@ -43,16 +43,19 @@ type BaseAction struct {
 
 	// InitBy это условие по которому триггерится данный экшн.
 	// Доступные варианты: InitByCommand, InitByText, InitByCallback
-	InitBy ActionInitByType
+	InitBy []ActionInitByType
+
+	// InitializedBy если InitBy создерживаем множествество элементов, то указывает чем было инициализировано
+	InitializedBy ActionInitByType
 
 	// InitText это текст, которым тригерится данный экшн при помощи типа, который указан в InitBy.
 	InitText string
 
-	// InitCallbackFuncName это имя функции, которой произошла активация
-	InitCallbackFuncName callbacks.CallbackFuncName
+	// InitCallbackFuncNames это имя функции, которой произошла активация
+	InitCallbackFuncNames []callbacks.CallbackFuncName
 
-	// CallbackData это данные, которые были получены, если action триггернулся на  InitByCallback
-	CallbackData *callbacks.DefaultType `json:"callback_data"`
+	//// CallbackData это данные, которые были получены, если action триггернулся на  InitByCallback
+	//CallbackData *callbacks.DefaultType `json:"callback_data"`
 
 	// AfterAction это условие, которое означающее предыдущий Action
 	//
@@ -84,37 +87,54 @@ func (act *BaseAction) GetBeforeAction() ActionNameType {
 func (act *BaseAction) Validate(update tgbotapi.Update) bool {
 
 	if act.AfterAction != "" {
-		if act.AfterAction != GetActualAction(update) {
+		actualAction := GetActualAction(update)
+		if act.ID != actualAction && act.AfterAction != actualAction {
 			return false
 		}
 	}
 
-	switch act.InitBy {
-	case InitByText:
-		if update.Message == nil || update.Message.IsCommand() {
-			return false
+	for _, byType := range act.InitBy {
+		res := false
+
+		switch byType {
+		case InitByText:
+			if update.Message == nil || update.Message.IsCommand() {
+				continue
+			}
+
+			res = act.InitText == "" || strings.ToLower(update.Message.Text) == strings.ToLower(act.InitText)
+		case InitByCommand:
+			if update.Message == nil || !update.Message.IsCommand() {
+				continue
+			}
+
+			res = update.Message.Command() == act.InitText
+		case InitByCallback:
+			if update.CallbackQuery == nil || update.CallbackQuery.Data == "" {
+				continue
+			}
+
+			var callbackData *callbacks.DefaultType
+
+			// Данное преобразование нужно, чтобы вытянуть имя функции
+			err := json.Unmarshal([]byte(update.CallbackQuery.Data), &callbackData)
+			if err != nil {
+				continue
+			}
+
+			for _, a := range act.InitCallbackFuncNames {
+				if a == callbackData.FuncName {
+					res = true
+				}
+			}
 		}
 
-		return act.InitText == "" || strings.ToLower(update.Message.Text) == strings.ToLower(act.InitText)
-	case InitByCommand:
-		if update.Message == nil || !update.Message.IsCommand() {
-			return false
+		if res {
+			act.InitializedBy = byType
+			return res
 		}
-
-		return update.Message.Command() == act.InitText
-	case InitByCallback:
-		if update.CallbackQuery == nil || update.CallbackQuery.Data == "" {
-			return false
-		}
-
-		// Данное преобразование нужно, чтобы вытянуть имя функции
-		err := json.Unmarshal([]byte(update.CallbackQuery.Data), &act.CallbackData)
-		if err != nil {
-			return false
-		}
-
-		return act.CallbackData.FuncName == act.InitCallbackFuncName
 	}
+
 	return false
 }
 
