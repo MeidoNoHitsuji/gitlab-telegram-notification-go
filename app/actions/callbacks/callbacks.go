@@ -52,7 +52,7 @@ type SelectProjectSettingsType struct {
 func NewSelectProjectSettingsType(projectId int) *SelectProjectSettingsType {
 	return &SelectProjectSettingsType{
 		DefaultType: DefaultType{
-			FuncName: SelectFilterFuncName,
+			FuncName: SelectProjectSettingsFuncName,
 		},
 		ProjectId: projectId,
 	}
@@ -80,7 +80,7 @@ type SelectFilterType struct {
 func NewSelectFilterType(projectId int) *SelectFilterType {
 	return &SelectFilterType{
 		DefaultType: DefaultType{
-			FuncName: SelectProjectSettingsFuncName,
+			FuncName: SelectFilterFuncName,
 		},
 		ProjectId: projectId,
 	}
@@ -116,15 +116,28 @@ func NewChoiceWebhookFilterType(projectId int) *ChoiceWebhookFilterType {
 
 type EditFilterType struct {
 	DefaultType
-	ProjectId int `json:"pi"`
+	ProjectId int    `json:"pi"`
+	EventId   uint   `json:"ei"`
+	EventName string `json:"en"`
 }
 
-func NewEditFilterType(projectId int) *EditFilterType {
+func NewEditFilterWithEventIdType(projectId int, eventId uint) *EditFilterType {
 	return &EditFilterType{
 		DefaultType: DefaultType{
 			FuncName: EditFilterFuncName,
 		},
 		ProjectId: projectId,
+		EventId:   eventId,
+	}
+}
+
+func NewEditFilterWithEventNameType(projectId int, eventName string) *EditFilterType {
+	return &EditFilterType{
+		DefaultType: DefaultType{
+			FuncName: EditFilterFuncName,
+		},
+		ProjectId: projectId,
+		EventName: eventName,
 	}
 }
 

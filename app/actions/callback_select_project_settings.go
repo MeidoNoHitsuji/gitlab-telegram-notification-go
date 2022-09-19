@@ -16,6 +16,42 @@ const SelectProjectSettings ActionNameType = "select_project_settings"
 type SelectProjectSettingsAction struct {
 	BaseAction
 	CallbackData *callbacks.SelectProjectSettingsType `json:"callback_data"`
+	BackData     SelectProjectSettingsBackData        `json:"bd"`
+}
+
+type SelectProjectSettingsBackData struct {
+	ProjectId int `json:"pi"`
+}
+
+func (act *SelectProjectSettingsAction) SetIsBack(update tgbotapi.Update) error {
+
+	err := act.BaseAction.SetIsBack(update)
+
+	if err != nil {
+		return err
+	}
+
+	var tmp map[string]interface{}
+	err = json.Unmarshal([]byte(update.CallbackQuery.Data), &tmp)
+
+	if err != nil {
+		return err
+	}
+
+	backData, ok := tmp["bd"]
+
+	if !ok {
+		return errors.New("Параметры не найдены.")
+	}
+
+	out, _ := json.Marshal(backData)
+	err = json.Unmarshal(out, &act.BackData)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NewSelectProjectSettingsAction() *SelectProjectSettingsAction {
@@ -44,11 +80,22 @@ func (act *SelectProjectSettingsAction) Active(update tgbotapi.Update) error {
 		return errors.New("Неизвестно откуда прилетел запрос.")
 	}
 
+	var project *gitlab.Project
+	var err error
 	git := gitclient.Instant()
-	project, _, err := git.Projects.GetProject(act.CallbackData.ProjectId, &gitlab.GetProjectOptions{})
 
-	if err != nil {
-		return err
+	if act.IsBack {
+		project, _, err = git.Projects.GetProject(act.BackData.ProjectId, &gitlab.GetProjectOptions{})
+
+		if err != nil {
+			return err
+		}
+	} else {
+		project, _, err = git.Projects.GetProject(act.CallbackData.ProjectId, &gitlab.GetProjectOptions{})
+
+		if err != nil {
+			return err
+		}
 	}
 
 	backOut, err := json.Marshal(
@@ -61,6 +108,25 @@ func (act *SelectProjectSettingsAction) Active(update tgbotapi.Update) error {
 		return err
 	}
 
+	newFiletData := callbacks.NewCreateFilterType(project.ID)
+	newFiletOut, err := json.Marshal(newFiletData)
+
+	if err != nil {
+		return err
+	}
+
+	selectFiletData := callbacks.NewSelectFilterType(project.ID)
+	selectFiletOut, err := json.Marshal(selectFiletData)
+
+	if err != nil {
+		return err
+	}
+
+	keyboard := tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("Добавить", string(newFiletOut)),
+		tgbotapi.NewInlineKeyboardButtonData("Обновить", string(selectFiletOut)),
+	)
+
 	keyboardBack := tgbotapi.NewInlineKeyboardRow(
 		tgbotapi.NewInlineKeyboardButtonData("Отмена", string(backOut)),
 	)
@@ -68,7 +134,7 @@ func (act *SelectProjectSettingsAction) Active(update tgbotapi.Update) error {
 	telegram.UpdateMessageById(
 		message,
 		"Ты выбрал настройки. Теперь выбери, хочешь ты обновить имеющийся фильтр или добавить новый?",
-		tgbotapi.NewInlineKeyboardMarkup(keyboardBack),
+		tgbotapi.NewInlineKeyboardMarkup(keyboard, keyboardBack),
 		nil,
 	)
 

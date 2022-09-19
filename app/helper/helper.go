@@ -43,6 +43,24 @@ func Keys(arr map[string]string) []string {
 	return res
 }
 
+func AllowEventsWithName() map[string]string {
+	events := []string{
+		string(gitlab.EventTypePipeline),
+		string(gitlab.EventTypeMergeRequest),
+	}
+
+	newEvents := make(map[string]string)
+
+	for _, event := range events {
+		key := Slugify(event)
+		if len(key) != 0 {
+			newEvents[key] = event
+		}
+	}
+
+	return newEvents
+}
+
 func AllowEvents() []string {
 	events := []string{
 		string(gitlab.EventTypePipeline),

@@ -116,9 +116,16 @@ func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
 		ID: project.ID,
 	}
 
-	db.Unscoped().FirstOrCreate(&projectObj, models.Project{
+	db.FirstOrCreate(&projectObj, models.Project{
 		Name: project.Name,
 	})
+
+	subscribeObj := models.Subscribe{
+		ProjectId:         project.ID,
+		TelegramChannelId: message.Chat.ID,
+	}
+
+	db.Unscoped().FirstOrCreate(&subscribeObj)
 
 	backData := callbacks.NewBackType(nil)
 	backOut, err := json.Marshal(backData)
@@ -144,15 +151,15 @@ func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
 	var textAct string
 
 	if act.InitializedBy == InitByCallback {
-		if !projectObj.DeletedAt.Valid {
-			db.Delete(&projectObj)
+		if !subscribeObj.DeletedAt.Valid {
+			db.Delete(&subscribeObj)
 			textAct = "Вкл"
 		} else {
-			db.Exec("UPDATE projects SET deleted_at = NULL WHERE id = ?", projectObj.ID)
+			db.Exec("UPDATE subscribes SET deleted_at = NULL WHERE id = ?", subscribeObj.ID)
 			textAct = "Выкл"
 		}
 	} else {
-		if !projectObj.DeletedAt.Valid {
+		if !subscribeObj.DeletedAt.Valid {
 			textAct = "Выкл"
 		} else {
 			textAct = "Вкл"

@@ -31,6 +31,9 @@ func GetActualActions() []BaseInterface {
 		NewSubscribesAction(),
 		NewSelectProjectAction(),
 		NewSelectProjectSettingsAction(),
+		NewCreateFilterActon(),
+		NewSelectFilterActon(),
+		NewEditFilterActon(),
 
 		NewSubscribeAction(),
 	}
