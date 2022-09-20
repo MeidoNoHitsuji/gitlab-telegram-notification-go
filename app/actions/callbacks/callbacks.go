@@ -3,15 +3,15 @@ package callbacks
 type CallbackFuncName string
 
 const (
-	TomatoFailNameFuncName        CallbackFuncName = "tomato_fail"
+	TomatoFailNameFuncName        CallbackFuncName = "tf_func" //tomato_fail
 	SubscribesFuncName            CallbackFuncName = "subscribes"
 	BackFuncName                  CallbackFuncName = "back"
-	SelectProjectSettingsFuncName CallbackFuncName = "select_project_settings"
-	SelectFilterFuncName          CallbackFuncName = "select_filter"
-	ChangeActiveFuncName          CallbackFuncName = "change_active"
-	CreateFilterFuncName          CallbackFuncName = "create_filter"
+	SelectProjectSettingsFuncName CallbackFuncName = "sps_func"       //select_project_settings
+	SelectFilterFuncName          CallbackFuncName = "sf_func"        //select_filter
+	ChangeActiveFuncName          CallbackFuncName = "ca_func"        //change_active
+	CreateFilterFuncName          CallbackFuncName = "cf_func"        //create_filter
 	ChoiceWebhookFilterFuncName   CallbackFuncName = "webhook_filter" //TODO: Создать callback На это
-	EditFilterFuncName            CallbackFuncName = "edit_filter"
+	EditFilterFuncName            CallbackFuncName = "ef_func"        //edit_filter
 )
 
 type DefaultType struct {
@@ -46,7 +46,8 @@ func NewSubscribesType() *SubscribesType {
 
 type SelectProjectSettingsType struct {
 	DefaultType
-	ProjectId int `json:"pi"`
+	ProjectId     int  `json:"pi"`
+	DeleteEventId uint `json:"dei"`
 }
 
 func NewSelectProjectSettingsType(projectId int) *SelectProjectSettingsType {
@@ -55,6 +56,16 @@ func NewSelectProjectSettingsType(projectId int) *SelectProjectSettingsType {
 			FuncName: SelectProjectSettingsFuncName,
 		},
 		ProjectId: projectId,
+	}
+}
+
+func NewSelectProjectSettingsWithDeleteEventType(projectId int, eventId uint) *SelectProjectSettingsType {
+	return &SelectProjectSettingsType{
+		DefaultType: DefaultType{
+			FuncName: SelectProjectSettingsFuncName,
+		},
+		ProjectId:     projectId,
+		DeleteEventId: eventId,
 	}
 }
 

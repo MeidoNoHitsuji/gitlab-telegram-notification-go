@@ -12,7 +12,7 @@ import (
 	"gitlab-telegram-notification-go/telegram"
 )
 
-const EditFilter ActionNameType = "edit_filter"
+const EditFilter ActionNameType = "ef_act" //edit_filter
 
 type EditFilterActon struct {
 	BaseAction
@@ -61,7 +61,7 @@ func NewEditFilterActon() *EditFilterActon {
 			ID:                    EditFilter,
 			InitBy:                []ActionInitByType{InitByCallback},
 			InitCallbackFuncNames: []callbacks.CallbackFuncName{callbacks.EditFilterFuncName},
-			BeforeAction:          SelectFilter,
+			BeforeAction:          SelectProjectSettings,
 		},
 	}
 }
@@ -88,16 +88,6 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 		return err
 	}
 
-	backOut, err := json.Marshal(
-		callbacks.NewBackType(
-			callbacks.NewSelectProjectSettingsType(project.ID),
-		),
-	)
-
-	if err != nil {
-		return err
-	}
-
 	db := database.Instant()
 
 	subscribeObj := models.Subscribe{
@@ -107,15 +97,18 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 
 	db.Unscoped().FirstOrCreate(&subscribeObj)
 
+	var subscribeEvent models.SubscribeEvent
+
 	if act.CallbackData.EventId == 0 {
-		subscribeEvent := models.SubscribeEvent{
+		subscribeEvent = models.SubscribeEvent{
 			SubscribeId: subscribeObj.ID,
 			Event:       act.CallbackData.EventName,
+			Parameters:  []interface{}{},
 		}
 
 		db.Save(&subscribeEvent)
 	} else {
-		subscribeEvent := models.SubscribeEvent{
+		subscribeEvent = models.SubscribeEvent{
 			ID: act.CallbackData.EventId,
 		}
 
@@ -126,14 +119,38 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 		}
 	}
 
+	deleteOut, err := json.Marshal(
+		callbacks.NewBackType(
+			callbacks.NewSelectProjectSettingsWithDeleteEventType(project.ID, subscribeEvent.ID),
+		),
+	)
+
+	if err != nil {
+		return err
+	}
+
+	keyboardDelete := tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("Удалить", string(deleteOut)),
+	)
+
+	backOut, err := json.Marshal(
+		callbacks.NewBackType(
+			callbacks.NewSelectProjectSettingsType(project.ID),
+		),
+	)
+
+	if err != nil {
+		return err
+	}
+
 	keyboardBack := tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("Отмена", string(backOut)),
+		tgbotapi.NewInlineKeyboardButtonData("Вернуться к настройкам", string(backOut)),
 	)
 
 	telegram.UpdateMessageById(
 		message,
 		"А тут мы будем редактировать ивент...",
-		tgbotapi.NewInlineKeyboardMarkup(keyboardBack),
+		tgbotapi.NewInlineKeyboardMarkup(keyboardDelete, keyboardBack),
 		nil,
 	)
 

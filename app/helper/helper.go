@@ -62,22 +62,7 @@ func AllowEventsWithName() map[string]string {
 }
 
 func AllowEvents() []string {
-	events := []string{
-		string(gitlab.EventTypePipeline),
-		string(gitlab.EventTypeMergeRequest),
-	}
-
-	var newEvents []string
-
-	for _, event := range events {
-		e := Slugify(event)
-		if len(e) != 0 {
-			newEvents = append(newEvents, e)
-		}
-
-	}
-
-	return newEvents
+	return Keys(AllowEventsWithName())
 }
 
 func UpperFirst(s string) string {

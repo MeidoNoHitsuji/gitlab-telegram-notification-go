@@ -11,7 +11,7 @@ import (
 	"gitlab-telegram-notification-go/telegram"
 )
 
-const CreateFilter ActionNameType = "create_filter"
+const CreateFilter ActionNameType = "cf_act" //create_filter
 
 type CreateFilterActon struct {
 	BaseAction
@@ -104,9 +104,17 @@ func (act *CreateFilterActon) Active(update tgbotapi.Update) error {
 	var keyboardRows [][]tgbotapi.InlineKeyboardButton
 	lines := len(eventKeys) / 3
 
-	//TODO: Почему-то не выводит ивенты
+	if len(eventKeys)%3 > 0 {
+		lines++
+	}
+
 	for i := 0; i < lines; i++ {
-		keys := eventKeys[i*3 : ((i + 1) * 3)]
+		slice := (i + 1) * 3
+		if slice > len(eventKeys) {
+			slice = len(eventKeys)
+		}
+		keys := eventKeys[i*3 : slice]
+
 		var keyboardButtons []tgbotapi.InlineKeyboardButton
 		for j := 0; j < len(keys); j++ {
 
@@ -122,6 +130,7 @@ func (act *CreateFilterActon) Active(update tgbotapi.Update) error {
 				tgbotapi.NewInlineKeyboardButtonData(events[keys[j]], string(eventOut)),
 			)
 		}
+
 		keyboardRows = append(keyboardRows, tgbotapi.NewInlineKeyboardRow(keyboardButtons...))
 	}
 

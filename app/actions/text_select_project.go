@@ -13,7 +13,7 @@ import (
 	"gitlab-telegram-notification-go/telegram"
 )
 
-const SelectProjectActionType ActionNameType = "select_project"
+const SelectProjectActionType ActionNameType = "sp_act" //select_project
 
 type SelectProjectAction struct {
 	BaseAction

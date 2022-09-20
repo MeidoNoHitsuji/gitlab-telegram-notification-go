@@ -3,14 +3,17 @@ package actions
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/actions/callbacks"
+	"gitlab-telegram-notification-go/database"
 	"gitlab-telegram-notification-go/gitclient"
+	"gitlab-telegram-notification-go/models"
 	"gitlab-telegram-notification-go/telegram"
 )
 
-const SelectProjectSettings ActionNameType = "select_project_settings"
+const SelectProjectSettings ActionNameType = "sps_act" // select_project_settings
 
 // SelectProjectSettingsAction вызывается когда надо выбирать действие для проекта
 type SelectProjectSettingsAction struct {
@@ -20,7 +23,8 @@ type SelectProjectSettingsAction struct {
 }
 
 type SelectProjectSettingsBackData struct {
-	ProjectId int `json:"pi"`
+	ProjectId     int  `json:"pi"`
+	DeleteEventId uint `json:"dei"`
 }
 
 func (act *SelectProjectSettingsAction) SetIsBack(update tgbotapi.Update) error {
@@ -131,9 +135,26 @@ func (act *SelectProjectSettingsAction) Active(update tgbotapi.Update) error {
 		tgbotapi.NewInlineKeyboardButtonData("Отмена", string(backOut)),
 	)
 
+	text := ""
+
+	if act.IsBack && act.BackData.DeleteEventId != 0 {
+		db := database.Instant()
+
+		subscribeEvent := models.SubscribeEvent{
+			ID: act.BackData.DeleteEventId,
+		}
+
+		result := db.Find(&subscribeEvent)
+
+		if result.RowsAffected != 0 {
+			db.Delete(subscribeEvent)
+			text += fmt.Sprintf("Ивент %s был удалён.\n", subscribeEvent.Event)
+		}
+	}
+
 	telegram.UpdateMessageById(
 		message,
-		"Ты выбрал настройки. Теперь выбери, хочешь ты обновить имеющийся фильтр или добавить новый?",
+		fmt.Sprintf("%sТы попал на страницу настроек. Теперь выбери, хочешь ты обновить имеющийся фильтр или добавить новый?", text),
 		tgbotapi.NewInlineKeyboardMarkup(keyboard, keyboardBack),
 		nil,
 	)

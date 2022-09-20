@@ -10,8 +10,7 @@ import (
 type ActionNameType string
 
 const (
-	SelectWebHookEvent  ActionNameType = "select_webhook_event"
-	EditParameterFilter ActionNameType = "edit_parameter_filter"
+	SelectWebHookEvent ActionNameType = "swe_act" //select_webhook_event
 )
 
 type ActionInitByType string

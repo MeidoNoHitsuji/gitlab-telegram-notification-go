@@ -13,7 +13,7 @@ import (
 	"gitlab-telegram-notification-go/telegram"
 )
 
-const SelectFilter ActionNameType = "select_filter"
+const SelectFilter ActionNameType = "sf_act" //select_filter
 
 type SelectFilterActon struct {
 	BaseAction
@@ -116,15 +116,24 @@ func (act *SelectFilterActon) Active(update tgbotapi.Update) error {
 	}).Find(&subscribeEvent)
 
 	var keyboardRows [][]tgbotapi.InlineKeyboardButton
-	
+
 	//TODO: Почему-то не выводит ивенты
 	if result.RowsAffected != 0 {
 		events := helper.AllowEventsWithName()
 
 		lines := len(subscribeEvent) / 3
 
+		if len(subscribeEvent)%3 > 0 {
+			lines++
+		}
+
 		for i := 0; i < lines; i++ {
-			se := subscribeEvent[i*3 : ((i + 1) * 3)]
+			slice := (i + 1) * 3
+			if slice > len(subscribeEvent) {
+				slice = len(subscribeEvent)
+			}
+
+			se := subscribeEvent[i*3 : slice]
 			var keyboardButtons []tgbotapi.InlineKeyboardButton
 			for j := 0; j < len(se); j++ {
 
