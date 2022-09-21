@@ -27,6 +27,24 @@ func Contains(arr []string, val string) bool {
 	return false
 }
 
+func Drop(arr []string, val string) []string {
+	i := 0
+
+	for j, s := range arr {
+		if s == val {
+			i = j
+		}
+	}
+
+	if i != 0 {
+		arr[i] = arr[len(arr)-1]
+		arr[len(arr)-1] = ""
+		arr = arr[:len(arr)-1]
+	}
+
+	return arr
+}
+
 func Slugify(val string) string {
 	val = strings.Replace(strings.ToLower(val), "hook", "", 1)
 	val = strings.TrimSpace(val)
@@ -73,4 +91,23 @@ func UpperFirst(s string) string {
 	}
 
 	return s
+}
+
+func Grouping(parameters []string, maxElements int) [][]string {
+	var result [][]string
+	lines := len(parameters) / maxElements
+
+	if len(parameters)%maxElements > 0 {
+		lines++
+	}
+
+	for i := 0; i < lines; i++ {
+		slice := (i + 1) * maxElements
+		if slice > len(parameters) {
+			slice = len(parameters)
+		}
+		result = append(result, parameters[i*maxElements:slice])
+	}
+
+	return result
 }

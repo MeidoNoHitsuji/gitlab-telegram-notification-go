@@ -127,13 +127,43 @@ func NewChoiceWebhookFilterType(projectId int) *ChoiceWebhookFilterType {
 
 type EditFilterType struct {
 	DefaultType
+	ProjectId      int    `json:"pi"`
+	EventId        uint   `json:"ei"`
+	EventName      string `json:"en"`
+	ParameterName  string `json:"pn"`
+	ParameterValue string `json:"pv"`
+	DeleteValue    bool   `json:"dv"`
+}
+
+type EditFilterByNameType struct {
+	DefaultType
 	ProjectId int    `json:"pi"`
-	EventId   uint   `json:"ei"`
 	EventName string `json:"en"`
 }
 
-func NewEditFilterWithEventIdType(projectId int, eventId uint) *EditFilterType {
-	return &EditFilterType{
+type EditFilterByIdType struct {
+	DefaultType
+	ProjectId int  `json:"pi"`
+	EventId   uint `json:"ei"`
+}
+
+type EditFilterWithParameterType struct {
+	EditFilterByIdType
+	ParameterName string `json:"pn"`
+}
+
+type EditFilterWithParameterValueType struct {
+	EditFilterWithParameterType
+	ParameterValue string `json:"pv"`
+}
+
+type EditFilterWithDeleteValueType struct {
+	EditFilterWithParameterType
+	DeleteValue bool `json:"dv"`
+}
+
+func NewEditFilterWithEventIdType(projectId int, eventId uint) *EditFilterByIdType {
+	return &EditFilterByIdType{
 		DefaultType: DefaultType{
 			FuncName: EditFilterFuncName,
 		},
@@ -142,13 +172,58 @@ func NewEditFilterWithEventIdType(projectId int, eventId uint) *EditFilterType {
 	}
 }
 
-func NewEditFilterWithEventNameType(projectId int, eventName string) *EditFilterType {
-	return &EditFilterType{
+func NewEditFilterWithEventNameType(projectId int, eventName string) *EditFilterByNameType {
+	return &EditFilterByNameType{
 		DefaultType: DefaultType{
 			FuncName: EditFilterFuncName,
 		},
 		ProjectId: projectId,
 		EventName: eventName,
+	}
+}
+
+func NewEditFilterWithParameterType(projectId int, eventId uint, parameterName string) *EditFilterWithParameterType {
+	return &EditFilterWithParameterType{
+		EditFilterByIdType: EditFilterByIdType{
+			DefaultType: DefaultType{
+				FuncName: EditFilterFuncName,
+			},
+			ProjectId: projectId,
+			EventId:   eventId,
+		},
+		ParameterName: parameterName,
+	}
+}
+
+func NewEditFilterWithParameterValueType(projectId int, eventId uint, parameterName string, parameterValue string) *EditFilterWithParameterValueType {
+	return &EditFilterWithParameterValueType{
+		EditFilterWithParameterType: EditFilterWithParameterType{
+			EditFilterByIdType: EditFilterByIdType{
+				DefaultType: DefaultType{
+					FuncName: EditFilterFuncName,
+				},
+				ProjectId: projectId,
+				EventId:   eventId,
+			},
+			ParameterName: parameterName,
+		},
+		ParameterValue: parameterValue,
+	}
+}
+
+func NewEditFilterWithDeleteParameterType(projectId int, eventId uint, parameterName string) *EditFilterWithDeleteValueType {
+	return &EditFilterWithDeleteValueType{
+		EditFilterWithParameterType: EditFilterWithParameterType{
+			EditFilterByIdType: EditFilterByIdType{
+				DefaultType: DefaultType{
+					FuncName: EditFilterFuncName,
+				},
+				ProjectId: projectId,
+				EventId:   eventId,
+			},
+			ParameterName: parameterName,
+		},
+		DeleteValue: true,
 	}
 }
 

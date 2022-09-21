@@ -43,7 +43,6 @@ func Active(update tgbotapi.Update) ActionErrorType {
 	for _, action := range GetActualActions() {
 		if action.Validate(update) {
 
-			//TODO: Решить проблему с передачей CallbackData в Active
 			err := action.Active(update)
 
 			if err != nil {
@@ -97,10 +96,16 @@ func GetActualAction(update tgbotapi.Update) ActionNameType {
 		return ""
 	}
 
-	return ActionNameType(database.GetUserActionInChannel(
+	action := database.GetUserActionInChannel(
 		chatId,
 		username,
-	))
+	)
+
+	if action != nil {
+		return ActionNameType(action.Action)
+	} else {
+		return ""
+	}
 }
 
 func BackAction(update tgbotapi.Update) error {

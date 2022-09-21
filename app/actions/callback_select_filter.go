@@ -117,7 +117,6 @@ func (act *SelectFilterActon) Active(update tgbotapi.Update) error {
 
 	var keyboardRows [][]tgbotapi.InlineKeyboardButton
 
-	//TODO: Почему-то не выводит ивенты
 	if result.RowsAffected != 0 {
 		events := helper.AllowEventsWithName()
 

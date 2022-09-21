@@ -17,9 +17,9 @@ type Subscribe struct {
 }
 
 type SubscribeEvent struct {
-	ID          uint          `gorm:"primarykey"`
-	SubscribeId uint          `json:"subscribe_id"`
-	Event       string        `json:"event"`
-	Parameters  []interface{} `gorm:"serializer:json"`
-	Subscribe   Subscribe     `gorm:"foreignKey:SubscribeId;references:ID;" json:"subscribe"`
+	ID          uint                `gorm:"primarykey"`
+	SubscribeId uint                `json:"subscribe_id"`
+	Event       string              `json:"event"`
+	Parameters  map[string][]string `gorm:"serializer:json"`
+	Subscribe   Subscribe           `gorm:"foreignKey:SubscribeId;references:ID;" json:"subscribe"`
 }

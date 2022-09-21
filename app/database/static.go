@@ -164,23 +164,7 @@ func GetEventsByProjectId(projectId int) []string {
 	return helper.Unique(events)
 }
 
-func GetUserActionInChannel(telegramId int64, username string) string {
-	var userAction models.UserTelegramChannelAction
-
-	db := Instant()
-	builder := db.Model(&models.UserTelegramChannelAction{}).Joins("inner join users as user on user.id = user_telegram_channel_actions.user_id")
-	builder = builder.Where("user_telegram_channel_actions.telegram_channel_id = ?", telegramId)
-	builder = builder.Where("user.username = ?", username)
-	builder = builder.Find(&userAction)
-
-	if builder.RowsAffected == 0 {
-		return ""
-	}
-
-	return userAction.Action
-}
-
-func UpdateUserActionInChannel(telegramId int64, username string, action string) error {
+func GetUserActionInChannel(telegramId int64, username string) *models.UserTelegramChannelAction {
 	db := Instant()
 
 	obj := models.UserTelegramChannelAction{}
@@ -191,22 +175,61 @@ func UpdateUserActionInChannel(telegramId int64, username string, action string)
 	builder = builder.Find(&obj)
 
 	if builder.RowsAffected == 0 {
-		user := &models.User{
-			Username: username,
-		}
-
-		r := db.Model(&models.User{}).Find(&user)
-
-		if r.RowsAffected == 0 {
-			return errors.New("Такой пользователь не найден!")
-		}
-
-		obj.Action = action
-		obj.TelegramChannelId = telegramId
-		obj.UserId = user.ID
-		db.Create(obj)
+		return nil
 	} else {
-		db.Model(&models.UserTelegramChannelAction{}).Where(obj).Update("action", action)
+		return &obj
+	}
+}
+
+func UpdateUserActionInChannel(telegramId int64, username string, action string) error {
+	obj := GetUserActionInChannel(telegramId, username)
+
+	if obj == nil {
+		if err := CreateUserActionInChannel(telegramId, username, action); err != nil {
+			return err
+		}
+	} else {
+		db := Instant()
+		db.Where(obj).Update("action", action)
+	}
+
+	return nil
+}
+
+func CreateUserActionInChannel(telegramId int64, username string, action string) error {
+	db := Instant()
+
+	obj := models.UserTelegramChannelAction{}
+
+	user := &models.User{
+		Username: username,
+	}
+
+	r := db.Model(&models.User{}).Find(&user)
+
+	if r.RowsAffected == 0 {
+		return errors.New("Такой пользователь не найден!")
+	}
+
+	obj.Action = action
+	obj.TelegramChannelId = telegramId
+	obj.UserId = user.ID
+	obj.Parameters = ""
+	db.Create(obj)
+
+	return nil
+}
+
+func UpdateUserActionWithParametersInChannel(telegramId int64, username string, action string, parameters string) error {
+	obj := GetUserActionInChannel(telegramId, username)
+
+	if obj == nil {
+		if err := CreateUserActionInChannel(telegramId, username, action); err != nil {
+			return err
+		}
+	} else {
+		db := Instant()
+		db.Where(obj).Update("action", action).Update("parameters", parameters)
 	}
 
 	return nil
