@@ -53,7 +53,8 @@ func (act *TomatoFailAction) Active(update tgbotapi.Update) error {
 func NewTomatoFailAction() *TomatoFailAction {
 	return &TomatoFailAction{
 		BaseAction: BaseAction{
-			InitBy: []ActionInitByType{InitByCallback},
+			InitBy:                []ActionInitByType{InitByCallback},
+			InitCallbackFuncNames: []callbacks.CallbackFuncName{callbacks.TomatoFailNameFuncName},
 		},
 	}
 }
