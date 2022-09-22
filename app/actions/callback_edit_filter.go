@@ -124,7 +124,6 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 	db := database.Instant()
 
 	subscribeObj := database.FirstOrCreateSubscribe(project.ID, message.Chat.ID, true)
-	fmt.Println(subscribeObj.ID)
 
 	var subscribeEvent models.SubscribeEvent
 
@@ -142,6 +141,9 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 		}
 
 		result := db.Find(&subscribeEvent)
+		if subscribeEvent.Parameters == nil {
+			subscribeEvent.Parameters = map[string][]string{}
+		}
 
 		if result.RowsAffected == 0 {
 			return NewErrorForUser("Не найден передаваемый ивент для редактирования!")
@@ -182,7 +184,6 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 			} else {
 				ps = append(ps, act.CallbackData.ParameterValue)
 			}
-			fmt.Println(ps)
 			subscribeEvent.Parameters[act.CallbackData.ParameterName] = ps
 			db.Save(&subscribeEvent)
 		}

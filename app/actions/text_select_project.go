@@ -120,7 +120,6 @@ func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
 	})
 
 	subscribeObj := database.FirstOrCreateSubscribe(project.ID, message.Chat.ID, true)
-	fmt.Println(subscribeObj.ID)
 
 	backData := callbacks.NewBackType(nil)
 	backOut, err := json.Marshal(backData)

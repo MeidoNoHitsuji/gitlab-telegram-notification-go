@@ -96,6 +96,9 @@ func (act *EditFilterParameterActon) Active(update tgbotapi.Update) error {
 	}
 
 	result := db.Find(&subscribeEvent)
+	if subscribeEvent.Parameters == nil {
+		subscribeEvent.Parameters = map[string][]string{}
+	}
 
 	if result.RowsAffected == 0 {
 		return NewErrorForUser("Не найден передаваемый ивент для редактирования!")
