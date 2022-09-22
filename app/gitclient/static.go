@@ -153,9 +153,9 @@ func Handler(event interface{}) error {
 
 			subscribeEvent := subscribe.Events[0]
 
-			if subscribeEvent.Formatter == "commit" {
+			if subscribeEvent.Formatter == "commits" {
 				data = NewPipelineCommitsType(event, commits)
-			} else if subscribeEvent.Formatter == "log" {
+			} else if subscribeEvent.Formatter == "logs" {
 				data = NewPipelineLogType(event, commits)
 			}
 
