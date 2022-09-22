@@ -28,7 +28,7 @@ func Contains(arr []string, val string) bool {
 }
 
 func Drop(arr []string, val string) []string {
-	i := 0
+	i := -1
 
 	for j, s := range arr {
 		if s == val {
@@ -36,7 +36,7 @@ func Drop(arr []string, val string) []string {
 		}
 	}
 
-	if i != 0 {
+	if i != -1 {
 		arr[i] = arr[len(arr)-1]
 		arr[len(arr)-1] = ""
 		arr = arr[:len(arr)-1]

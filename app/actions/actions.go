@@ -34,6 +34,7 @@ func GetActualActions() []BaseInterface {
 		NewCreateFilterActon(),
 		NewSelectFilterActon(),
 		NewEditFilterActon(),
+		NewEditFilterParameterActon(),
 
 		NewSubscribeAction(),
 	}
@@ -57,21 +58,42 @@ func Active(update tgbotapi.Update) ActionErrorType {
 	return NewErrorForUser("Я не понимаю, что ты от меня хочешь.")
 }
 
+func UpdateActualActionParameter(update tgbotapi.Update, parameter string) {
+	chatId, username := GetChatIdAndUsernameByUpdate(update)
+
+	if chatId == 0 {
+		return
+	}
+
+	database.UpdateUserActionParameterInChannel(
+		chatId,
+		username,
+		parameter,
+	)
+}
+
+func UpdateActualActionFormatter(update tgbotapi.Update, formatter string) {
+	chatId, username := GetChatIdAndUsernameByUpdate(update)
+
+	if chatId == 0 {
+		return
+	}
+
+	database.UpdateUserActionFormatterInChannel(
+		chatId,
+		username,
+		formatter,
+	)
+}
+
 func UpdateActualAction(update tgbotapi.Update, action BaseInterface) {
 	actionName := action.GetActionName()
 
-	var chatId int64
-	var username string
-
 	if actionName != "" {
 
-		if update.CallbackQuery != nil {
-			chatId = update.CallbackQuery.Message.Chat.ID
-			username = update.CallbackQuery.From.UserName
-		} else if update.Message != nil {
-			chatId = update.Message.Chat.ID
-			username = update.Message.From.UserName
-		} else {
+		chatId, username := GetChatIdAndUsernameByUpdate(update)
+
+		if chatId == 0 {
 			return
 		}
 
@@ -83,23 +105,24 @@ func UpdateActualAction(update tgbotapi.Update, action BaseInterface) {
 	}
 }
 
-func GetActualAction(update tgbotapi.Update) ActionNameType {
-	var chatId int64
-	var username string
+func GetChatIdAndUsernameByUpdate(update tgbotapi.Update) (int64, string) {
 	if update.CallbackQuery != nil {
-		chatId = update.CallbackQuery.Message.Chat.ID
-		username = update.CallbackQuery.From.UserName
+		return update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.From.UserName
 	} else if update.Message != nil {
-		chatId = update.Message.Chat.ID
-		username = update.Message.From.UserName
+		return update.Message.Chat.ID, update.Message.From.UserName
 	} else {
+		return 0, ""
+	}
+}
+
+func GetActualAction(update tgbotapi.Update) ActionNameType {
+	chatId, username := GetChatIdAndUsernameByUpdate(update)
+
+	if chatId == 0 {
 		return ""
 	}
 
-	action := database.GetUserActionInChannel(
-		chatId,
-		username,
-	)
+	action := database.GetUserActionInChannel(chatId, username)
 
 	if action != nil {
 		return ActionNameType(action.Action)

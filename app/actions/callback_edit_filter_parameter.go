@@ -4,7 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/actions/callbacks"
+	"gitlab-telegram-notification-go/database"
+	"gitlab-telegram-notification-go/gitclient"
+	"gitlab-telegram-notification-go/helper"
+	"gitlab-telegram-notification-go/models"
 	"gitlab-telegram-notification-go/telegram"
 )
 
@@ -56,7 +61,7 @@ func NewEditFilterParameterActon() *EditFilterParameterActon {
 		BaseAction: BaseAction{
 			ID:                    EditFilterParameter,
 			InitBy:                []ActionInitByType{InitByCallback},
-			InitCallbackFuncNames: []callbacks.CallbackFuncName{callbacks.EditFilterFuncName},
+			InitCallbackFuncNames: []callbacks.CallbackFuncName{callbacks.EditFilterParameterFuncName},
 			BeforeAction:          EditFilter,
 		},
 	}
@@ -77,19 +82,70 @@ func (act *EditFilterParameterActon) Active(update tgbotapi.Update) error {
 		return errors.New("Неизвестно откуда прилетел запрос.")
 	}
 
-	//git := gitclient.Instant()
-	//project, _, err := git.Projects.GetProject(act.CallbackData.ProjectId, &gitlab.GetProjectOptions{})
-	//
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//telegram.SendMessageById(
-	//	message.Chat.ID,
-	//	"Выберите одно из значений, предоставленных снизу или введите значение сами.",
-	//	tgbotapi.NewInlineKeyboardMarkup(keyboards...),
-	//	nil,
-	//)
+	git := gitclient.Instant()
+	_, _, err := git.Projects.GetProject(act.CallbackData.ProjectId, &gitlab.GetProjectOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	db := database.Instant()
+
+	subscribeEvent := models.SubscribeEvent{
+		ID: act.CallbackData.EventId,
+	}
+
+	result := db.Find(&subscribeEvent)
+
+	if result.RowsAffected == 0 {
+		return NewErrorForUser("Не найден передаваемый ивент для редактирования!")
+	}
+
+	var keyboards [][]tgbotapi.KeyboardButton
+
+	allowParameters := AllowParameters()
+
+	parameters, ok := allowParameters[subscribeEvent.Event]
+
+	if ok {
+		filters, ok := parameters[act.CallbackData.ParameterName]
+
+		if ok {
+			groupsValues := helper.Grouping(
+				helper.Drop(
+					helper.Keys(filters),
+					AnywhereValueParameter,
+				),
+				3,
+			)
+
+			for _, values := range groupsValues {
+				var keyboardButtons []tgbotapi.KeyboardButton
+				for j := 0; j < len(values); j++ {
+					keyboardButtons = append(
+						keyboardButtons,
+						tgbotapi.NewKeyboardButton(values[j]),
+					)
+				}
+
+				keyboards = append(keyboards, tgbotapi.NewKeyboardButtonRow(keyboardButtons...))
+			}
+		}
+	}
+
+	keyboards = append(keyboards, tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton("Отмена"),
+	))
+
+	keyboard := tgbotapi.NewReplyKeyboard(keyboards...)
+	keyboard.OneTimeKeyboard = true
+
+	telegram.SendMessageById(
+		message.Chat.ID,
+		"Выберите одно из значений, предоставленных снизу или введите значение сами.\nЕсли введённое вами значение уже было фильте, то оно будет удалено.",
+		keyboard,
+		nil,
+	)
 
 	return nil
 }

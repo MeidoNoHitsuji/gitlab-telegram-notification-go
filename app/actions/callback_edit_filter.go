@@ -10,6 +10,7 @@ import (
 	"gitlab-telegram-notification-go/database"
 	"gitlab-telegram-notification-go/gitclient"
 	"gitlab-telegram-notification-go/helper"
+	fm "gitlab-telegram-notification-go/helper/formater"
 	"gitlab-telegram-notification-go/models"
 	"gitlab-telegram-notification-go/telegram"
 	"strings"
@@ -20,7 +21,6 @@ const EditFilter ActionNameType = "ef_act" //edit_filter
 type EditFilterActon struct {
 	BaseAction
 	CallbackData *callbacks.EditFilterType `json:"callback_data"`
-	BackData     EditFilterBackData        `json:"bd"`
 }
 
 type EditFilterBackData struct {
@@ -35,25 +35,23 @@ func (act *EditFilterActon) SetIsBack(update tgbotapi.Update) error {
 		return err
 	}
 
-	var tmp map[string]interface{}
-	err = json.Unmarshal([]byte(update.CallbackQuery.Data), &tmp)
+	chatId, username := GetChatIdAndUsernameByUpdate(update)
 
-	if err != nil {
+	if chatId == 0 {
+		return errors.New("Не найден пользователь для update.")
+	}
+
+	action := database.GetUserActionInChannel(chatId, username)
+
+	if action == nil {
+		return errors.New("Не найден action для update.")
+	}
+
+	if err = json.Unmarshal([]byte(action.Parameters), &act.CallbackData); err != nil {
 		return err
 	}
 
-	backData, ok := tmp["bd"]
-
-	if !ok {
-		return errors.New("Параметры не найдены.")
-	}
-
-	out, _ := json.Marshal(backData)
-	err = json.Unmarshal(out, &act.BackData)
-
-	if err != nil {
-		return err
-	}
+	UpdateActualActionParameter(update, "")
 
 	return nil
 }
@@ -81,19 +79,29 @@ func (act *EditFilterActon) Validate(update tgbotapi.Update) bool {
 	if act.InitializedBy == InitByText {
 		message, _ := telegram.GetMessageFromUpdate(update)
 
-		action := database.GetUserActionInChannel(
-			message.Chat.ID,
-			message.From.UserName,
-		)
+		chatId, username := GetChatIdAndUsernameByUpdate(update)
+
+		if chatId == 0 {
+			return false
+		}
+
+		action := database.GetUserActionInChannel(chatId, username)
+
+		if action == nil {
+			return false
+		}
 
 		result := json.Unmarshal([]byte(action.Parameters), &act.CallbackData) == nil
 
-		action.Parameters = ""
+		if !result {
+			return false
+		}
 
-		db := database.Instant()
-		db.Save(action)
+		act.CallbackData.ParameterValue = message.Text
 
-		return result
+		UpdateActualActionParameter(update, "")
+		telegram.SendRemoveKeyboard(message.Chat.ID, false)
+		return true
 	} else {
 		return json.Unmarshal([]byte(update.CallbackQuery.Data), &act.CallbackData) == nil
 	}
@@ -115,12 +123,8 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 
 	db := database.Instant()
 
-	subscribeObj := models.Subscribe{
-		ProjectId:         project.ID,
-		TelegramChannelId: message.Chat.ID,
-	}
-
-	db.Unscoped().FirstOrCreate(&subscribeObj)
+	subscribeObj := database.FirstOrCreateSubscribe(project.ID, message.Chat.ID, true)
+	fmt.Println(subscribeObj.ID)
 
 	var subscribeEvent models.SubscribeEvent
 
@@ -158,58 +162,177 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 		tgbotapi.NewInlineKeyboardButtonData("Вернуться к настройкам", string(backOut)),
 	)
 
-	allowParameters := AllowParameters()
-
-	allowEvents := helper.AllowEventsWithName()
-	parameters, ok := allowParameters[subscribeEvent.Event]
-	var parameterKeys []string
-
-	for k := range parameters {
-		parameterKeys = append(parameterKeys, k)
+	// Редактируем данные, если это сейчас необходимо и передано!!
+	if act.CallbackData.EditFormatter {
+		if act.CallbackData.DeleteValue {
+			subscribeEvent.Formatter = ""
+			db.Save(&subscribeEvent)
+		} else if act.CallbackData.FormatterValue != "" {
+			subscribeEvent.Formatter = act.CallbackData.FormatterValue
+			db.Save(&subscribeEvent)
+		}
+	} else if act.CallbackData.ParameterName != "" {
+		if act.CallbackData.DeleteValue {
+			subscribeEvent.Parameters[act.CallbackData.ParameterName] = []string{}
+			db.Save(&subscribeEvent)
+		} else if act.CallbackData.ParameterValue != "" {
+			ps := subscribeEvent.Parameters[act.CallbackData.ParameterName]
+			if helper.Contains(ps, act.CallbackData.ParameterValue) {
+				ps = helper.Drop(ps, act.CallbackData.ParameterValue)
+			} else {
+				ps = append(ps, act.CallbackData.ParameterValue)
+			}
+			fmt.Println(ps)
+			subscribeEvent.Parameters[act.CallbackData.ParameterName] = ps
+			db.Save(&subscribeEvent)
+		}
 	}
+	//Закончили редактировать данные!!
 
 	var text string
 	var keyboards [][]tgbotapi.InlineKeyboardButton
+	var parameterKeys []string
 
-	if ok {
-		parameterNames := ParameterNames()
+	allowParameters := AllowParameters()
+	parameterNames := ParameterNames()
+	parameters, canEditParameters := allowParameters[subscribeEvent.Event]
+
+	//Вытаскиваем только те ключи, которые мы можем обрабатывать через webhook'и
+	if canEditParameters {
+		for k := range parameters {
+			parameterKeys = append(parameterKeys, k)
+		}
+	}
+
+	allowFormatters := AllowFormatters()
+	formatters, canEditFormatter := allowFormatters[subscribeEvent.Event]
+
+	//Формируем блок текста для параметров
+	if canEditParameters {
+
+		allowEvents := helper.AllowEventsWithName()
+
 		text = fmt.Sprintf("Тип ивента: %s\n—————\nИмеющиеся параметры:", allowEvents[subscribeEvent.Event])
 
-		if act.CallbackData.ParameterName != "" {
-			if act.CallbackData.DeleteValue {
-				subscribeEvent.Parameters[act.CallbackData.ParameterName] = []string{}
-				db.Save(&subscribeEvent)
-			} else if act.CallbackData.ParameterValue != "" {
-				ps := subscribeEvent.Parameters[act.CallbackData.ParameterName]
-				if helper.Contains(ps, act.CallbackData.ParameterValue) {
-					ps = helper.Drop(ps, act.CallbackData.ParameterValue)
-				} else {
-					ps = append(ps, act.CallbackData.ParameterValue)
-				}
-				subscribeEvent.Parameters[act.CallbackData.ParameterName] = ps
-				db.Save(&subscribeEvent)
-			}
-		}
-
-		if len(subscribeEvent.Parameters) == 0 {
-			text = fmt.Sprintf("%s\nОтсутствуют.", text)
-		} else {
+		if len(subscribeEvent.Parameters) != 0 {
 			for _, key := range parameterKeys {
 				currentParams, ok := subscribeEvent.Parameters[key]
 
 				if ok && len(currentParams) > 0 {
-					text = fmt.Sprintf("%s\n> %s: %s", text, parameterNames[key], strings.Join(currentParams, ", "))
+					var newCurrentParams []string
+
+					for _, param := range currentParams {
+						newCurrentParams = append(newCurrentParams, fm.Underline(param))
+					}
+
+					text = fmt.Sprintf("%s\n> %s: %s", text, parameterNames[key], strings.Join(newCurrentParams, ", "))
+				} else {
+					text = fmt.Sprintf("%s\n> %s: %s", text, parameterNames[key], fm.Italic("Ну учитывается"))
 				}
 			}
+		} else {
+			text = fmt.Sprintf("%s\nОтсутствуют.", text)
 		}
 
 		if act.CallbackData.ParameterName != "" {
 			text = fmt.Sprintf("%s\n\nРедактируемый параметр: %s", text, parameterNames[act.CallbackData.ParameterName])
+		}
+	} else {
+		text = "Фильтры данного ивента ещё нельзя редактировать!"
+	}
+	//Закончили фромировать блок текста для параметров
+
+	//Формируем блок текста для форматтера
+	if canEditFormatter {
+		currentFormatter, ok := formatters[subscribeEvent.Formatter]
+
+		if ok {
+			text = fmt.Sprintf("%s\n—————\nТип форматирования: %s", text, currentFormatter)
+		} else {
+			text = fmt.Sprintf("%s\n—————\nТип форматирования: По умолчанию", text)
+		}
+	} else {
+		text = fmt.Sprintf("%s\n—————\nУ данного ивента ещё нельзя менять форматирование", text)
+	}
+	//Закончили фромировать блок текста для
+
+	//Если мы сейчас редактируем форматтер
+	if act.CallbackData.EditFormatter {
+		//Добавляем кнопки форматтера
+		if canEditFormatter {
+			for _, keys := range helper.Grouping(helper.Keys(formatters), 3) {
+				var keyboardButtons []tgbotapi.InlineKeyboardButton
+				for j := 0; j < len(keys); j++ {
+
+					eventData := callbacks.NewEditFilterWithFormatterValueType(project.ID, subscribeEvent.ID, keys[j])
+					eventOut, err := json.Marshal(eventData)
+
+					if err != nil {
+						return err
+					}
+
+					keyboardButtons = append(
+						keyboardButtons,
+						tgbotapi.NewInlineKeyboardButtonData(formatters[keys[j]], string(eventOut)),
+					)
+				}
+
+				keyboards = append(keyboards, tgbotapi.NewInlineKeyboardRow(keyboardButtons...))
+			}
+		}
+
+		deleteFormatterOut, err := json.Marshal(
+			callbacks.NewEditFilterWithDeleteFormatterType(project.ID, subscribeEvent.ID),
+		)
+
+		if err != nil {
+			return err
+		}
+
+		backOut, err := json.Marshal(
+			callbacks.NewEditFilterWithEventIdType(project.ID, subscribeEvent.ID),
+		)
+
+		if err != nil {
+			return err
+		}
+
+		keyboards = append(keyboards,
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("По умолчанию", string(deleteFormatterOut)),
+				tgbotapi.NewInlineKeyboardButtonData("Назад", string(backOut)),
+			),
+		)
+		//Иначе, если мы редактируем параметры
+	} else if act.CallbackData.ParameterName != "" {
+		//И можем это делать
+		if canEditParameters {
+			//То добавляем кнопки параметров, которые нам доступны
 			filters := parameters[act.CallbackData.ParameterName]
 			filterKeys := helper.Keys(filters)
 			if helper.Contains(filterKeys, AnywhereValueParameter) {
 
-				//TODO: Добавить переход на кнопочный экшн с вводом параметров
+				eventData := callbacks.NewEditFilterWithParameterType(project.ID, subscribeEvent.ID, act.CallbackData.ParameterName)
+				eventOut, err := json.Marshal(eventData)
+
+				if err != nil {
+					return err
+				}
+				UpdateActualActionParameter(update, string(eventOut))
+
+				buttonOut, err := json.Marshal(
+					callbacks.NewEditFilterParameterType(project.ID, subscribeEvent.ID, act.CallbackData.ParameterName),
+				)
+
+				if err != nil {
+					return err
+				}
+
+				keyboards = append(keyboards,
+					tgbotapi.NewInlineKeyboardRow(
+						tgbotapi.NewInlineKeyboardButtonData("Ввести значение", string(buttonOut)),
+					),
+				)
 			} else {
 				for _, keys := range helper.Grouping(filterKeys, 3) {
 					var keyboardButtons []tgbotapi.InlineKeyboardButton
@@ -231,28 +354,36 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 					keyboards = append(keyboards, tgbotapi.NewInlineKeyboardRow(keyboardButtons...))
 				}
 			}
+		}
 
-			deleteParamData := callbacks.NewEditFilterWithDeleteParameterType(project.ID, subscribeEvent.ID, act.CallbackData.ParameterName)
-			deleteParamOut, err := json.Marshal(deleteParamData)
+		deleteParamData := callbacks.NewEditFilterWithDeleteParameterType(project.ID, subscribeEvent.ID, act.CallbackData.ParameterName)
+		deleteParamOut, err := json.Marshal(deleteParamData)
 
-			if err != nil {
-				return err
-			}
+		if err != nil {
+			return err
+		}
 
-			dropParamData := callbacks.NewEditFilterWithEventIdType(project.ID, subscribeEvent.ID)
-			dropParamOut, err := json.Marshal(dropParamData)
+		dropParamData := callbacks.NewEditFilterWithEventIdType(project.ID, subscribeEvent.ID)
+		dropParamOut, err := json.Marshal(dropParamData)
 
-			if err != nil {
-				return err
-			}
+		if err != nil {
+			return err
+		}
 
-			keyboards = append(keyboards,
-				tgbotapi.NewInlineKeyboardRow(
-					tgbotapi.NewInlineKeyboardButtonData("Отчистить параметер", string(deleteParamOut)),
-					tgbotapi.NewInlineKeyboardButtonData("Изменить параметр", string(dropParamOut)),
-				),
-			)
-		} else {
+		keyboards = append(keyboards,
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Отчистить параметер", string(deleteParamOut)),
+				tgbotapi.NewInlineKeyboardButtonData("Изменить параметр", string(dropParamOut)),
+			),
+		)
+	}
+
+	//Добавляем дефолтные кнопки из главного меню (если мы не редактируем ни то, ни то)
+	if act.CallbackData.ParameterName == "" && !act.CallbackData.EditFormatter {
+
+		// Если мы можем редактировать параметры
+		if canEditParameters {
+			//То добавляем кнопки возможных параметров для редактирования
 			for _, keys := range helper.Grouping(parameterKeys, 3) {
 				var keyboardButtons []tgbotapi.InlineKeyboardButton
 				for j := 0; j < len(keys); j++ {
@@ -272,77 +403,119 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 
 				keyboards = append(keyboards, tgbotapi.NewInlineKeyboardRow(keyboardButtons...))
 			}
+		}
 
-			deleteOut, err := json.Marshal(
-				callbacks.NewBackType(
-					callbacks.NewSelectProjectSettingsWithDeleteEventType(project.ID, subscribeEvent.ID),
-				),
+		//Если мы можем редактировать форматтер
+		if canEditFormatter && len(formatters) > 0 {
+			formatterOut, err := json.Marshal(
+				callbacks.NewEditFilterWithFormatterType(project.ID, subscribeEvent.ID),
 			)
 
 			if err != nil {
 				return err
 			}
 
-			keyboardDelete := tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Удалить ивент", string(deleteOut)),
+			keyboardFormatter := tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Изменить форматирование", string(formatterOut)),
 			)
 
-			keyboards = append(keyboards, keyboardDelete)
+			keyboards = append(keyboards, keyboardFormatter)
 		}
-	} else {
-		text = "Данный ивент ещё нельзя редактировать!"
+
+		deleteOut, err := json.Marshal(
+			callbacks.NewBackType(
+				callbacks.NewSelectProjectSettingsWithDeleteEventType(project.ID, subscribeEvent.ID),
+			),
+		)
+
+		if err != nil {
+			return err
+		}
+
+		keyboardDelete := tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Удалить ивент", string(deleteOut)),
+		)
+
+		keyboards = append(keyboards, keyboardDelete)
 	}
+	//Закончили добавлять дефолтные кнопки
 
 	keyboards = append(keyboards, keyboardBack)
 
-	telegram.UpdateMessageById(
-		message,
-		text,
-		tgbotapi.NewInlineKeyboardMarkup(keyboards...),
-		nil,
-	)
+	if act.IsBack || act.InitializedBy == InitByText {
+		telegram.SendMessageById(
+			message.Chat.ID,
+			text,
+			tgbotapi.NewInlineKeyboardMarkup(keyboards...),
+			nil,
+		)
+	} else {
+		telegram.UpdateMessageWithParseById(
+			message,
+			text,
+			tgbotapi.NewInlineKeyboardMarkup(keyboards...),
+		)
+	}
 
 	return nil
 }
 
 const AnywhereValueParameter = "..."
 
+const (
+	AuthorUsernameParameter = "author_username"
+	FromBranchNameParameter = "from_branch_name"
+	ToBranchNameParameter   = "to_branch_name"
+	StatusParameter         = "status"
+	IsMergeParameter        = "is_merge"
+)
+
 func ParameterNames() map[string]string {
 	return map[string]string{
-		"author_username":  "Имя автора",
-		"from_branch_name": "Изначальная ветка",
-		"to_branch_name":   "Конечная ветка",
-		"status":           "Статус",
-		"is_merge":         "Это мерж",
+		AuthorUsernameParameter: "Никнейм автора",
+		FromBranchNameParameter: "Изначальная ветка",
+		ToBranchNameParameter:   "Конечная ветка",
+		StatusParameter:         "Статус",
+		IsMergeParameter:        "Это мерж",
 	}
 }
 
 func AllowParameters() map[string]map[string]map[string]string {
 	return map[string]map[string]map[string]string{
 		"pipeline": {
-			"author_username": map[string]string{
+			AuthorUsernameParameter: map[string]string{
 				AnywhereValueParameter: "",
 			},
-			"from_branch_name": map[string]string{
-				"develop":              "Develop",
-				"master":               "Master",
-				"release":              "Release",
+			FromBranchNameParameter: map[string]string{
+				"develop":              "",
+				"master":               "",
+				"release":              "",
 				AnywhereValueParameter: "",
 			},
-			"to_branch_name": map[string]string{
-				"develop":              "Develop",
-				"master":               "Master",
-				"release":              "Release",
+			ToBranchNameParameter: map[string]string{
+				"develop":              "",
+				"master":               "",
+				"release":              "",
 				AnywhereValueParameter: "",
 			},
-			"status": map[string]string{
+			StatusParameter: map[string]string{
 				"failed":  "Завершён с ошибкой",
 				"success": "Успешно завершён",
 			},
-			"is_merge": map[string]string{
+			IsMergeParameter: map[string]string{
 				"true":  "Да",
 				"false": "Нет",
 			},
+		},
+	}
+}
+
+func AllowFormatters() map[string]map[string]string {
+	return map[string]map[string]string{
+		"pipeline": {
+			"default": "Пункты сборки",
+			"commits": "Новые комиты",
+			"logs":    "Соглашение о комитах с ссылками на Jira",
 		},
 	}
 }

@@ -21,5 +21,6 @@ type SubscribeEvent struct {
 	SubscribeId uint                `json:"subscribe_id"`
 	Event       string              `json:"event"`
 	Parameters  map[string][]string `gorm:"serializer:json"`
+	Formatter   string              `json:"formatter"`
 	Subscribe   Subscribe           `gorm:"foreignKey:SubscribeId;references:ID;" json:"subscribe"`
 }

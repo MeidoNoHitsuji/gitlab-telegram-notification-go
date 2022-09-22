@@ -12,6 +12,7 @@ const (
 	CreateFilterFuncName          CallbackFuncName = "cf_func"        //create_filter
 	ChoiceWebhookFilterFuncName   CallbackFuncName = "webhook_filter" //TODO: Создать callback На это
 	EditFilterFuncName            CallbackFuncName = "ef_func"        //edit_filter
+	EditFilterParameterFuncName   CallbackFuncName = "efp_func"       //edit_filter_parameter
 )
 
 type DefaultType struct {
@@ -133,6 +134,8 @@ type EditFilterType struct {
 	ParameterName  string `json:"pn"`
 	ParameterValue string `json:"pv"`
 	DeleteValue    bool   `json:"dv"`
+	EditFormatter  bool   `json:"ef"`
+	FormatterValue string `json:"fv"`
 }
 
 type EditFilterByNameType struct {
@@ -162,6 +165,21 @@ type EditFilterWithDeleteValueType struct {
 	DeleteValue bool `json:"dv"`
 }
 
+type EditFilterWithFormatterType struct {
+	EditFilterByIdType
+	EditFormatter bool `json:"ef"`
+}
+
+type EditFilterWithFormatterValueType struct {
+	EditFilterWithFormatterType
+	FormatterValue string `json:"fv"`
+}
+
+type EditFilterWithDeleteFormatterType struct {
+	EditFilterWithFormatterType
+	DeleteValue bool `json:"dv"`
+}
+
 func NewEditFilterWithEventIdType(projectId int, eventId uint) *EditFilterByIdType {
 	return &EditFilterByIdType{
 		DefaultType: DefaultType{
@@ -182,11 +200,71 @@ func NewEditFilterWithEventNameType(projectId int, eventName string) *EditFilter
 	}
 }
 
+func NewEditFilterWithFormatterType(projectId int, eventId uint) *EditFilterWithFormatterType {
+	return &EditFilterWithFormatterType{
+		EditFilterByIdType: EditFilterByIdType{
+			DefaultType: DefaultType{
+				FuncName: EditFilterFuncName,
+			},
+			ProjectId: projectId,
+			EventId:   eventId,
+		},
+		EditFormatter: true,
+	}
+}
+
+func NewEditFilterWithFormatterValueType(projectId int, eventId uint, formatterValue string) *EditFilterWithFormatterValueType {
+	return &EditFilterWithFormatterValueType{
+		EditFilterWithFormatterType: EditFilterWithFormatterType{
+			EditFilterByIdType: EditFilterByIdType{
+				DefaultType: DefaultType{
+					FuncName: EditFilterFuncName,
+				},
+				ProjectId: projectId,
+				EventId:   eventId,
+			},
+			EditFormatter: true,
+		},
+		FormatterValue: formatterValue,
+	}
+}
+
+func NewEditFilterWithDeleteFormatterType(projectId int, eventId uint) *EditFilterWithDeleteFormatterType {
+	return &EditFilterWithDeleteFormatterType{
+		EditFilterWithFormatterType: EditFilterWithFormatterType{
+			EditFilterByIdType: EditFilterByIdType{
+				DefaultType: DefaultType{
+					FuncName: EditFilterFuncName,
+				},
+				ProjectId: projectId,
+				EventId:   eventId,
+			},
+			EditFormatter: true,
+		},
+		DeleteValue: true,
+	}
+}
+
+//NewEditFilterWithParameterType (FuncName = EditFilterFuncName)
 func NewEditFilterWithParameterType(projectId int, eventId uint, parameterName string) *EditFilterWithParameterType {
 	return &EditFilterWithParameterType{
 		EditFilterByIdType: EditFilterByIdType{
 			DefaultType: DefaultType{
 				FuncName: EditFilterFuncName,
+			},
+			ProjectId: projectId,
+			EventId:   eventId,
+		},
+		ParameterName: parameterName,
+	}
+}
+
+// NewEditFilterParameterType (FuncName = EditFilterParameterFuncName)
+func NewEditFilterParameterType(projectId int, eventId uint, parameterName string) *EditFilterWithParameterType {
+	return &EditFilterWithParameterType{
+		EditFilterByIdType: EditFilterByIdType{
+			DefaultType: DefaultType{
+				FuncName: EditFilterParameterFuncName,
 			},
 			ProjectId: projectId,
 			EventId:   eventId,

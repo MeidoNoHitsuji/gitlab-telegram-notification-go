@@ -6,6 +6,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/helper"
 	"gitlab-telegram-notification-go/models"
+	"gorm.io/gorm"
 	"strings"
 )
 
@@ -93,7 +94,7 @@ func GetSubscribesByProjectIdAndKind(filter GetSubscribesFilter) []models.Subscr
 	var subscribes []models.Subscribe
 	db := Instant()
 
-	builder := db.Model(&models.Subscribe{}).Preload("TelegramChannel").Joins("inner join subscribe_events as event on event.subscribe_id = subscribes.id")
+	builder := db.Model(&models.Subscribe{}).Preload("TelegramChannel").Preload("Events").Joins("inner join subscribe_events as event on event.subscribe_id = subscribes.id")
 
 	if filter.ProjectId != 0 {
 		builder = builder.Where("subscribes.project_id = ?", filter.ProjectId)
@@ -104,18 +105,38 @@ func GetSubscribesByProjectIdAndKind(filter GetSubscribesFilter) []models.Subscr
 	}
 
 	if filter.Status != "" {
-		p := "JSON_EXTRACT(event.parameters, '$[*].status')"
-		builder = builder.Where(fmt.Sprintf("(%s is null or %s = '' or %s = ?)", p, p, p), filter.Status)
+		p1 := "JSON_EXTRACT(event.parameters, '$.status') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.status')) = 0"
+		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.status')"
+		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.Status)
 	}
 
 	if filter.AuthorUsername != "" {
-		p := "JSON_EXTRACT(event.parameters, '$[*].author_username')"
-		builder = builder.Where(fmt.Sprintf("(%s is null or %s = '' or %s = ?)", p, p, p), filter.AuthorUsername)
+		p1 := "JSON_EXTRACT(event.parameters, '$.author_username') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.author_username')) = 0"
+		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.author_username')"
+		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.AuthorUsername)
 	}
 
-	if filter.BranchName != "" {
-		p := "JSON_EXTRACT(event.parameters, '$[*].branch_name')"
-		builder = builder.Where(fmt.Sprintf("(%s is null or %s = '' or %s = ?)", p, p, p), filter.BranchName)
+	if filter.ToBranchName != "" {
+		p1 := "JSON_EXTRACT(event.parameters, '$.to_branch_name') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.to_branch_name')) = 0"
+		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.to_branch_name')"
+		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.ToBranchName)
+	}
+
+	if filter.FromBranchName != "" {
+		p1 := "JSON_EXTRACT(event.parameters, '$.to_branch_name') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.to_branch_name')) = 0"
+		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.to_branch_name')"
+		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.FromBranchName)
+	}
+
+	if filter.IsMerge != "" {
+		p1 := "JSON_EXTRACT(event.parameters, '$.to_branch_name') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.to_branch_name')) = 0"
+		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.to_branch_name')"
+		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.IsMerge)
 	}
 
 	builder = builder.Find(&subscribes)
@@ -190,7 +211,7 @@ func UpdateUserActionInChannel(telegramId int64, username string, action string)
 		}
 	} else {
 		db := Instant()
-		db.Where(obj).Update("action", action)
+		db.Model(&models.UserTelegramChannelAction{}).Where(obj).Update("action", action)
 	}
 
 	return nil
@@ -220,17 +241,59 @@ func CreateUserActionInChannel(telegramId int64, username string, action string)
 	return nil
 }
 
-func UpdateUserActionWithParametersInChannel(telegramId int64, username string, action string, parameters string) error {
+func UpdateUserActionParameterInChannel(telegramId int64, username string, parameters string) error {
 	obj := GetUserActionInChannel(telegramId, username)
 
 	if obj == nil {
-		if err := CreateUserActionInChannel(telegramId, username, action); err != nil {
-			return err
-		}
+		return errors.New("Action не был найден!")
 	} else {
 		db := Instant()
-		db.Where(obj).Update("action", action).Update("parameters", parameters)
+		db.Model(&models.UserTelegramChannelAction{}).Where(obj).Update("parameters", parameters)
 	}
 
 	return nil
+}
+
+func UpdateUserActionFormatterInChannel(telegramId int64, username string, formatter string) error {
+	obj := GetUserActionInChannel(telegramId, username)
+
+	if obj == nil {
+		return errors.New("Action не был найден!")
+	} else {
+		db := Instant()
+		db.Model(&models.UserTelegramChannelAction{}).Where(obj).Update("formatter", formatter)
+	}
+
+	return nil
+}
+
+func FirstOrCreateSubscribe(ProjectId int, TelegramChannelId int64, WithDelete bool) *models.Subscribe {
+	db := Instant()
+
+	subscribeObj := models.Subscribe{
+		ProjectId:         ProjectId,
+		TelegramChannelId: TelegramChannelId,
+	}
+
+	var builder *gorm.DB
+
+	if WithDelete {
+		builder = db.Unscoped().Model(&models.Subscribe{})
+	} else {
+		builder = db.Model(&models.Subscribe{})
+	}
+
+	res := builder.Where(&subscribeObj).Find(&subscribeObj)
+
+	if WithDelete {
+		builder = db.Unscoped().Model(&models.Subscribe{})
+	} else {
+		builder = db.Model(&models.Subscribe{})
+	}
+
+	if res.RowsAffected == 0 {
+		builder.Save(&subscribeObj)
+	}
+
+	return &subscribeObj
 }

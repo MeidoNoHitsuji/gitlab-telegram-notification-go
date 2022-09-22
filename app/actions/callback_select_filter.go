@@ -3,6 +3,7 @@ package actions
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/actions/callbacks"
@@ -102,12 +103,8 @@ func (act *SelectFilterActon) Active(update tgbotapi.Update) error {
 
 	db := database.Instant()
 
-	subscribeObj := models.Subscribe{
-		ProjectId:         project.ID,
-		TelegramChannelId: message.Chat.ID,
-	}
-
-	db.Unscoped().FirstOrCreate(&subscribeObj)
+	subscribeObj := database.FirstOrCreateSubscribe(project.ID, message.Chat.ID, true)
+	fmt.Println(subscribeObj.ID)
 
 	var subscribeEvent []models.SubscribeEvent
 

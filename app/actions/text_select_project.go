@@ -69,7 +69,6 @@ func (act *SelectProjectAction) Validate(update tgbotapi.Update) bool {
 	}
 }
 
-//TODO: Удалять подписку, а не проект при отключение проекта!!
 func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
 	message, botMessage := telegram.GetMessageFromUpdate(update)
 
@@ -120,12 +119,8 @@ func (act *SelectProjectAction) Active(update tgbotapi.Update) error {
 		Name: project.Name,
 	})
 
-	subscribeObj := models.Subscribe{
-		ProjectId:         project.ID,
-		TelegramChannelId: message.Chat.ID,
-	}
-
-	db.Unscoped().FirstOrCreate(&subscribeObj)
+	subscribeObj := database.FirstOrCreateSubscribe(project.ID, message.Chat.ID, true)
+	fmt.Println(subscribeObj.ID)
 
 	backData := callbacks.NewBackType(nil)
 	backOut, err := json.Marshal(backData)
@@ -204,6 +199,7 @@ func NewSelectProjectAction() *SelectProjectAction {
 			},
 			AfterAction:           SubscribesActionType,
 			InitCallbackFuncNames: []callbacks.CallbackFuncName{callbacks.ChangeActiveFuncName},
+			BeforeAction:          SubscribesActionType,
 		},
 	}
 }

@@ -98,7 +98,7 @@ func Handler(event interface{}) error {
 			Event:          event.ObjectKind,
 			Status:         event.ObjectAttributes.State,
 			AuthorUsername: event.User.Username,
-			BranchName:     event.ObjectAttributes.TargetBranch,
+			ToBranchName:   event.ObjectAttributes.TargetBranch,
 		})
 		var message string
 
@@ -119,39 +119,46 @@ func Handler(event interface{}) error {
 		}
 	case *gitlab.PipelineEvent:
 		var message string
+		var IsMerge string
+
+		if event.MergeRequest.ID != 0 {
+			IsMerge = "true"
+		} else {
+			IsMerge = "false"
+		}
+
 		subscribes := database.GetSubscribesByProjectIdAndKind(database.GetSubscribesFilter{
 			ProjectId:      event.Project.ID,
 			Event:          event.ObjectKind,
 			Status:         event.ObjectAttributes.Status,
 			AuthorUsername: event.User.Username,
-			BranchName:     event.ObjectAttributes.Ref,
+			ToBranchName:   event.ObjectAttributes.Ref,
+			IsMerge:        IsMerge,
 		})
 
 		var data PipelineDefaultInterface
 
 		data = NewPipelineDefaultType(event)
+		commits, err := GetCommitsLastPipeline(event.Project.ID, event.ObjectAttributes.BeforeSHA, event.ObjectAttributes.SHA)
 
-		if event.ObjectAttributes.Status == "success" {
-			if event.ObjectAttributes.Ref == "develop" {
-				commits, err := GetCommitsLastPipeline(event.Project.ID, event.ObjectAttributes.BeforeSHA, event.ObjectAttributes.SHA)
-
-				if err != nil {
-					break
-				}
-
-				data = NewPipelineCommitsType(event, commits)
-			} else if event.ObjectAttributes.Ref == "master" || event.ObjectAttributes.Ref == "release" {
-				commits, err := GetCommitsLastPipeline(event.Project.ID, event.ObjectAttributes.BeforeSHA, event.ObjectAttributes.SHA)
-
-				if err != nil {
-					break
-				}
-
-				data = NewPipelineLogType(event, commits)
-			}
+		if err != nil {
+			break
 		}
 
 		for _, subscribe := range subscribes {
+
+			if len(subscribe.Events) == 0 {
+				continue
+			}
+
+			subscribeEvent := subscribe.Events[0]
+
+			if subscribeEvent.Formatter == "commit" {
+				data = NewPipelineCommitsType(event, commits)
+			} else if subscribeEvent.Formatter == "log" {
+				data = NewPipelineLogType(event, commits)
+			}
+
 			data.SetSubscribe(&subscribe)
 
 			message = data.Make(false)
