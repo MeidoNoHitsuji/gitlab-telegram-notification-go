@@ -126,16 +126,16 @@ func GetSubscribesByProjectIdAndKind(filter GetSubscribesFilter) []models.Subscr
 	}
 
 	if filter.FromBranchName != "" {
-		p1 := "JSON_EXTRACT(event.parameters, '$.to_branch_name') is null"
-		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.to_branch_name')) = 0"
-		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.to_branch_name')"
+		p1 := "JSON_EXTRACT(event.parameters, '$.from_branch_name') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.from_branch_name')) = 0"
+		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.from_branch_name')"
 		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.FromBranchName)
 	}
 
 	if filter.IsMerge != "" {
-		p1 := "JSON_EXTRACT(event.parameters, '$.to_branch_name') is null"
-		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.to_branch_name')) = 0"
-		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.to_branch_name')"
+		p1 := "JSON_EXTRACT(event.parameters, '$.is_merge') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.is_merge')) = 0"
+		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.is_merge')"
 		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.IsMerge)
 	}
 
