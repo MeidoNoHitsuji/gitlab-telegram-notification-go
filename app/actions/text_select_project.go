@@ -196,7 +196,7 @@ func NewSelectProjectAction() *SelectProjectAction {
 				InitByCallback,
 				InitByText,
 			},
-			AfterAction:           SubscribesActionType,
+			AfterAction:           []ActionNameType{SubscribesActionType},
 			InitCallbackFuncNames: []callbacks.CallbackFuncName{callbacks.ChangeActiveFuncName},
 			BeforeAction:          SubscribesActionType,
 		},

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"gitlab-telegram-notification-go/actions/callbacks"
+	"gitlab-telegram-notification-go/actions/middlewares"
 	"strings"
 )
 
@@ -56,18 +57,21 @@ type BaseAction struct {
 	//// CallbackData это данные, которые были получены, если action триггернулся на  InitByCallback
 	//CallbackData *callbacks.DefaultType `json:"callback_data"`
 
-	// AfterAction это условие, которое означающее предыдущий Action
+	// AfterAction это услови, которое означающее предыдущий Action
 	//
 	// Пустое значение - должно отсутствовать
 	// nil - любой action
 	// ActionNameType - соответствует имени экшна
-	AfterAction ActionNameType
+	AfterAction []ActionNameType
 
 	// IsBack отвечает является ли выполнение текущего Action'а возвратом
 	IsBack bool
 
 	// BackData это даные, которые были получены при кнопке Отмена, если IsBack = true
 	BackData any `json:"bd"`
+
+	//Мидлвары, которые необходимо валидировать
+	MiddleWares []middlewares.MiddleWares
 }
 
 func (act *BaseAction) GetActionName() ActionNameType {
@@ -85,15 +89,29 @@ func (act *BaseAction) GetBeforeAction() ActionNameType {
 
 func (act *BaseAction) Validate(update tgbotapi.Update) bool {
 
-	if act.AfterAction != "" {
+	if act.AfterAction != nil && len(act.AfterAction) > 0 {
 		actualAction := GetActualAction(update)
-		if act.ID != actualAction && act.AfterAction != actualAction {
+
+		res := false
+
+		if act.ID == actualAction {
+			res = true
+		} else {
+			for _, actName := range act.AfterAction {
+				if !res && actName == actualAction {
+					res = true
+				}
+			}
+		}
+
+		if !res {
 			return false
 		}
 	}
 
+	res := false
+
 	for _, byType := range act.InitBy {
-		res := false
 
 		switch byType {
 		case InitByText:
@@ -130,11 +148,23 @@ func (act *BaseAction) Validate(update tgbotapi.Update) bool {
 
 		if res {
 			act.InitializedBy = byType
-			return res
+			break
 		}
 	}
 
-	return false
+	if !res {
+		return false
+	}
+
+	if len(act.MiddleWares) > 0 {
+		for _, middleware := range act.MiddleWares {
+			if !middleware(update) {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 // SelectWebHookEventAction вызывается когда надо выбрать имя ивента

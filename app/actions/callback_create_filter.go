@@ -102,19 +102,8 @@ func (act *CreateFilterActon) Active(update tgbotapi.Update) error {
 	eventKeys := helper.Keys(events)
 
 	var keyboardRows [][]tgbotapi.InlineKeyboardButton
-	lines := len(eventKeys) / 3
 
-	if len(eventKeys)%3 > 0 {
-		lines++
-	}
-
-	for i := 0; i < lines; i++ {
-		slice := (i + 1) * 3
-		if slice > len(eventKeys) {
-			slice = len(eventKeys)
-		}
-		keys := eventKeys[i*3 : slice]
-
+	for _, keys := range helper.Grouping(eventKeys, 3) {
 		var keyboardButtons []tgbotapi.InlineKeyboardButton
 		for j := 0; j < len(keys); j++ {
 

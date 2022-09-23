@@ -9,6 +9,7 @@ import (
 	"gitlab-telegram-notification-go/database"
 	"gitlab-telegram-notification-go/gitclient"
 	"gitlab-telegram-notification-go/helper"
+	fm "gitlab-telegram-notification-go/helper/formater"
 	"gitlab-telegram-notification-go/models"
 	"gitlab-telegram-notification-go/telegram"
 )
@@ -143,9 +144,13 @@ func (act *EditFilterParameterActon) Active(update tgbotapi.Update) error {
 	keyboard := tgbotapi.NewReplyKeyboard(keyboards...)
 	keyboard.OneTimeKeyboard = true
 
+	text := "Выберите одно из значений, предоставленных снизу или введите значение сами.\nЕсли введённое вами значение уже было фильте, то оно будет удалено."
+
+	text += "\n\nПример ввода: " + fm.Italic("value1") + "\nИли: " + fm.Italic("value1, value2, value3")
+
 	telegram.SendMessageById(
 		message.Chat.ID,
-		"Выберите одно из значений, предоставленных снизу или введите значение сами.\nЕсли введённое вами значение уже было фильте, то оно будет удалено.",
+		text,
 		keyboard,
 		nil,
 	)

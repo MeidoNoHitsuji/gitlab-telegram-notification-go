@@ -3,16 +3,19 @@ package callbacks
 type CallbackFuncName string
 
 const (
-	TomatoFailNameFuncName        CallbackFuncName = "tf_func" //tomato_fail
+	StartFuncName                 CallbackFuncName = "start"
 	SubscribesFuncName            CallbackFuncName = "subscribes"
 	BackFuncName                  CallbackFuncName = "back"
-	SelectProjectSettingsFuncName CallbackFuncName = "sps_func"       //select_project_settings
-	SelectFilterFuncName          CallbackFuncName = "sf_func"        //select_filter
-	ChangeActiveFuncName          CallbackFuncName = "ca_func"        //change_active
-	CreateFilterFuncName          CallbackFuncName = "cf_func"        //create_filter
-	ChoiceWebhookFilterFuncName   CallbackFuncName = "webhook_filter" //TODO: Создать callback На это
-	EditFilterFuncName            CallbackFuncName = "ef_func"        //edit_filter
-	EditFilterParameterFuncName   CallbackFuncName = "efp_func"       //edit_filter_parameter
+	TomatoFailNameFuncName        CallbackFuncName = "tf_func"   //tomato_fail
+	UserSettingsFuncName          CallbackFuncName = "us_func"   //user_settings
+	UserSettingTokensFuncName     CallbackFuncName = "ust_func"  //user_setting_tokens
+	UserSettingEnterTokenFuncName CallbackFuncName = "uset_func" //user_setting_enter_token
+	SelectProjectSettingsFuncName CallbackFuncName = "sps_func"  //select_project_settings
+	SelectFilterFuncName          CallbackFuncName = "sf_func"   //select_filter
+	ChangeActiveFuncName          CallbackFuncName = "ca_func"   //change_active
+	CreateFilterFuncName          CallbackFuncName = "cf_func"   //create_filter
+	EditFilterFuncName            CallbackFuncName = "ef_func"   //edit_filter
+	EditFilterParameterFuncName   CallbackFuncName = "efp_func"  //edit_filter_parameter
 )
 
 type DefaultType struct {
@@ -33,6 +36,18 @@ func NewTomatoFailType(count int) TomatoFailType {
 	}
 }
 
+type StartType struct {
+	DefaultType
+}
+
+func NewStartType() *StartType {
+	return &StartType{
+		DefaultType: DefaultType{
+			FuncName: StartFuncName,
+		},
+	}
+}
+
 type SubscribesType struct {
 	DefaultType
 }
@@ -42,6 +57,55 @@ func NewSubscribesType() *SubscribesType {
 		DefaultType: DefaultType{
 			FuncName: SubscribesFuncName,
 		},
+	}
+}
+
+type UserSettingsType struct {
+	DefaultType
+}
+
+func NewUserSettingsType() *UserSettingsType {
+	return &UserSettingsType{
+		DefaultType: DefaultType{
+			FuncName: UserSettingsFuncName,
+		},
+	}
+}
+
+type UserSettingTokensType struct {
+	DefaultType
+	TokenType  string `json:"tt"`
+	TokenValue string `json:"tv"`
+}
+
+func NewUserSettingTokensType() *UserSettingTokensType {
+	return &UserSettingTokensType{
+		DefaultType: DefaultType{
+			FuncName: UserSettingTokensFuncName,
+		},
+	}
+}
+
+func NewUserSettingTokensWithTokenType(tokenType string) *UserSettingTokensType {
+	return &UserSettingTokensType{
+		DefaultType: DefaultType{
+			FuncName: UserSettingTokensFuncName,
+		},
+		TokenType: tokenType,
+	}
+}
+
+type UserSettingEnterTokenType struct {
+	DefaultType
+	TokenType string `json:"tt"`
+}
+
+func NewUserSettingEnterTokenType(tokenType string) *UserSettingEnterTokenType {
+	return &UserSettingEnterTokenType{
+		DefaultType: DefaultType{
+			FuncName: UserSettingEnterTokenFuncName,
+		},
+		TokenType: tokenType,
 	}
 }
 
@@ -107,20 +171,6 @@ func NewCreateFilterType(projectId int) *CreateFilterType {
 	return &CreateFilterType{
 		DefaultType: DefaultType{
 			FuncName: CreateFilterFuncName,
-		},
-		ProjectId: projectId,
-	}
-}
-
-type ChoiceWebhookFilterType struct {
-	DefaultType
-	ProjectId int `json:"pi"`
-}
-
-func NewChoiceWebhookFilterType(projectId int) *ChoiceWebhookFilterType {
-	return &ChoiceWebhookFilterType{
-		DefaultType: DefaultType{
-			FuncName: ChoiceWebhookFilterFuncName,
 		},
 		ProjectId: projectId,
 	}

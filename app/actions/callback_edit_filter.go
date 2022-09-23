@@ -64,6 +64,11 @@ func NewEditFilterActon() *EditFilterActon {
 				InitByCallback,
 				InitByText,
 			},
+			AfterAction: []ActionNameType{
+				CreateFilter,
+				EditFilterParameter,
+				SelectFilter,
+			},
 			InitCallbackFuncNames: []callbacks.CallbackFuncName{callbacks.EditFilterFuncName},
 			BeforeAction:          SelectProjectSettings,
 		},
@@ -73,7 +78,6 @@ func NewEditFilterActon() *EditFilterActon {
 func (act *EditFilterActon) Validate(update tgbotapi.Update) bool {
 	if !act.BaseAction.Validate(update) {
 		return false
-
 	}
 
 	if act.InitializedBy == InitByText {
@@ -179,11 +183,17 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 			db.Save(&subscribeEvent)
 		} else if act.CallbackData.ParameterValue != "" {
 			ps := subscribeEvent.Parameters[act.CallbackData.ParameterName]
-			if helper.Contains(ps, act.CallbackData.ParameterValue) {
-				ps = helper.Drop(ps, act.CallbackData.ParameterValue)
-			} else {
-				ps = append(ps, act.CallbackData.ParameterValue)
+
+			parameterValues := strings.Split(act.CallbackData.ParameterValue, ", ")
+
+			for _, v := range parameterValues {
+				if helper.Contains(ps, v) {
+					ps = helper.Drop(ps, v)
+				} else {
+					ps = append(ps, v)
+				}
 			}
+
 			subscribeEvent.Parameters[act.CallbackData.ParameterName] = ps
 			db.Save(&subscribeEvent)
 		}

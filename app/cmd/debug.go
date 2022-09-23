@@ -3,7 +3,10 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"gitlab-telegram-notification-go/gitclient"
+	"gitlab-telegram-notification-go/database"
+	"gitlab-telegram-notification-go/models"
+	"gitlab-telegram-notification-go/toggl"
+	"os"
 )
 
 var debugCmd = &cobra.Command{
@@ -16,12 +19,49 @@ func init() {
 }
 
 func debug(cmd *cobra.Command, args []string) {
-	commits, err := gitclient.GetCommitsLastPipeline(338, "2d5a0f79e238ee704c015520909719445f33692a", "a2f7d5f5698425a4a5d8d630c11389b7c723b5e8")
+
+	var token models.UserToken
+
+	db := database.Instant()
+
+	db.Where(models.UserToken{
+		TokenType: "toggle",
+		User: models.User{
+			TelegramChannelId: 479413765,
+		},
+	}).First(&token)
+
+	userData, err := toggl.Me(token.Token)
+
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 
-	for _, commit := range commits {
-		fmt.Println(commit.Title)
+	result, err := toggl.Events()
+
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(result)
+	}
+
+	err = toggl.GetSubscriptions(userData.DefaultWorkspaceId, token.Token)
+
+	url := fmt.Sprintf("%s/%s/%s/%d", os.Getenv("WEBHOOK_DOMAIN"), os.Getenv("WEBHOOK_URL"), os.Getenv("TOGGLE_WEBHOOK_URL"), userData.Id)
+
+	err = toggl.CreateSubscriptions(userData.DefaultWorkspaceId, token.Token, toggl.SubscriptionCreateData{
+		Enabled:     false,
+		UrlCallback: url,
+		Description: "Какое-то описание",
+		EventFilters: []toggl.SubscriptionEventData{
+			{
+				Action: "*",
+				Entity: "time_entry",
+			},
+		},
+	})
+
+	if err != nil {
+		panic(err)
 	}
 }
