@@ -56,3 +56,14 @@ func WebPipeline(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(strings.ReplaceAll(strings.TrimSpace(data.Body()), "\n", "<br>")))
 	w.WriteHeader(200)
 }
+
+func WebToggle(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	if vars["user_id"] == "" {
+		http.Error(w, "Вы не передали параметр user_id", http.StatusUnprocessableEntity)
+		return
+	}
+
+	w.WriteHeader(200)
+}
