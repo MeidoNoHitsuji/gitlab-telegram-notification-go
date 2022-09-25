@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/database"
+	"gitlab-telegram-notification-go/helper"
 	fm "gitlab-telegram-notification-go/helper/formater"
 	"gitlab-telegram-notification-go/telegram"
 	"os"
@@ -88,6 +89,16 @@ func Subscribe(project *gitlab.Project, hookOptions gitlab.AddProjectHookOptions
 	}
 
 	return text, nil
+}
+
+func SubscribeByProject(project *gitlab.Project) (string, error) {
+	allEvents := database.GetEventsByProjectId(project.ID)
+
+	return Subscribe(project, gitlab.AddProjectHookOptions{
+		PushEvents:          gitlab.Bool(helper.Contains(allEvents, helper.Slugify(string(gitlab.EventTypePush)))),
+		PipelineEvents:      gitlab.Bool(helper.Contains(allEvents, helper.Slugify(string(gitlab.EventTypePipeline)))),
+		MergeRequestsEvents: gitlab.Bool(helper.Contains(allEvents, helper.Slugify(string(gitlab.EventTypeMergeRequest)))),
+	})
 }
 
 func Handler(event interface{}) error {

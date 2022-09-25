@@ -151,6 +151,7 @@ func (act *SelectProjectSettingsAction) Active(update tgbotapi.Update) error {
 
 		if result.RowsAffected != 0 {
 			db.Delete(subscribeEvent)
+			gitclient.SubscribeByProject(project)
 			text += fmt.Sprintf("Ивент %s был удалён.\n", subscribeEvent.Event)
 		}
 	}

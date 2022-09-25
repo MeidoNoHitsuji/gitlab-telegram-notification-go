@@ -1,9 +1,12 @@
 package routes
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
 	"gitlab-telegram-notification-go/gitclient"
 	"html/template"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -57,12 +60,58 @@ func WebPipeline(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
+func GetWebToggle(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	if vars["user_id"] == "" {
+		http.Error(w, "Вы не передали параметр user_id", http.StatusUnprocessableEntity)
+		return
+	}
+
+	w.Write([]byte("Hello!"))
+
+	w.WriteHeader(200)
+}
+
 func WebToggle(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	if vars["user_id"] == "" {
 		http.Error(w, "Вы не передали параметр user_id", http.StatusUnprocessableEntity)
 		return
+	}
+
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(403)
+		return
+	}
+
+	var result ToggleData
+
+	err = json.Unmarshal(body, &result)
+
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(403)
+		return
+	}
+
+	if result.Payload == "ping" {
+		type Response struct {
+			ValCode string `json:"validation_code"`
+		}
+
+		response := Response{
+			ValCode: result.ValidationCode,
+		}
+
+		res, _ := json.Marshal(response)
+
+		w.Write(res)
 	}
 
 	w.WriteHeader(200)

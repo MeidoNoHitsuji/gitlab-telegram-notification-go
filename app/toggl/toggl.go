@@ -109,32 +109,72 @@ func Events() (*[]Event, error) {
 	}
 }
 
-func CreateSubscriptions(workspaceId int, token string, data SubscriptionCreateData) error {
+func CreateSubscriptions(workspaceId int, token string, data SubscriptionData) (*SubscriptionData, error) {
+	data.Secret = os.Getenv("TOGGLE_SECRET")
 
 	out, err := json.Marshal(data)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	response, err := builder(WebhookType, http.MethodPost, fmt.Sprintf("subscriptions/%d", workspaceId), token, out)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	fmt.Println(response)
-	return nil
+	var result SubscriptionData
+
+	err = json.Unmarshal([]byte(response), &result)
+
+	if err != nil {
+		return nil, err
+	} else {
+		return &result, nil
+	}
 }
 
-func GetSubscriptions(workspaceId int, token string) error {
+func UpdateSubscriptions(workspaceId int, subscriptionId int, token string, data SubscriptionData) (*SubscriptionData, error) {
+	data.Secret = os.Getenv("TOGGLE_SECRET")
+
+	out, err := json.Marshal(data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := builder(WebhookType, http.MethodPut, fmt.Sprintf("subscriptions/%d/%d", workspaceId, subscriptionId), token, out)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result SubscriptionData
+
+	err = json.Unmarshal([]byte(response), &result)
+
+	if err != nil {
+		return nil, err
+	} else {
+		return &result, nil
+	}
+}
+
+func GetSubscriptions(workspaceId int, token string) ([]*SubscriptionData, error) {
 	response, err := builder(WebhookType, http.MethodGet, fmt.Sprintf("subscriptions/%d", workspaceId), token, nil)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	fmt.Println(response)
+	var result []*SubscriptionData
 
-	return nil
+	err = json.Unmarshal([]byte(response), &result)
+
+	if err != nil {
+		return nil, err
+	} else {
+		return result, nil
+	}
 }

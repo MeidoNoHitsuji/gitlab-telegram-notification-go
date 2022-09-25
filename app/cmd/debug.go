@@ -45,23 +45,34 @@ func debug(cmd *cobra.Command, args []string) {
 		fmt.Println(result)
 	}
 
-	err = toggl.GetSubscriptions(userData.DefaultWorkspaceId, token.Token)
-
-	url := fmt.Sprintf("%s/%s/%s/%d", os.Getenv("WEBHOOK_DOMAIN"), os.Getenv("WEBHOOK_URL"), os.Getenv("TOGGLE_WEBHOOK_URL"), userData.Id)
-
-	err = toggl.CreateSubscriptions(userData.DefaultWorkspaceId, token.Token, toggl.SubscriptionCreateData{
-		Enabled:     false,
-		UrlCallback: url,
-		Description: "Какое-то описание",
-		EventFilters: []toggl.SubscriptionEventData{
-			{
-				Action: "*",
-				Entity: "time_entry",
-			},
-		},
-	})
+	r, err := toggl.GetSubscriptions(userData.DefaultWorkspaceId, token.Token)
 
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+	} else {
+		fmt.Println(r)
 	}
+
+	url := fmt.Sprintf("%s/%d", os.Getenv("TOGGLE_WEBHOOK_URL"), userData.Id)
+
+	for _, data := range r {
+		res, err := toggl.UpdateSubscriptions(userData.DefaultWorkspaceId, data.SubscriptionId, token.Token, toggl.SubscriptionData{
+			Enabled:     false,
+			UrlCallback: url,
+			Description: "Какое-то описание",
+			EventFilters: []toggl.SubscriptionEventData{
+				{
+					Action: "*",
+					Entity: "time_entry",
+				},
+			},
+		})
+
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(res)
+		}
+	}
+
 }

@@ -32,7 +32,7 @@ type SubscriptionEventData struct {
 	Entity string `json:"entity"`
 }
 
-type SubscriptionCreateData struct {
+type SubscriptionData struct {
 	CreatedAt        time.Time               `json:"created_at"`
 	DeletedAt        time.Time               `json:"deleted_at"`
 	Description      string                  `json:"description"`

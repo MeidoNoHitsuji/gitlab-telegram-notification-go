@@ -139,6 +139,8 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 		}
 
 		db.Save(&subscribeEvent)
+
+		gitclient.SubscribeByProject(project)
 	} else {
 		subscribeEvent = models.SubscribeEvent{
 			ID: act.CallbackData.EventId,
