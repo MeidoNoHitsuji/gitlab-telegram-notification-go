@@ -85,6 +85,7 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
+		fmt.Println("ReadAll")
 		fmt.Println(err)
 		w.WriteHeader(403)
 		return
@@ -95,6 +96,8 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &result)
 
 	if err != nil {
+		fmt.Println("Unmarshal")
+		fmt.Println(body)
 		fmt.Println(err)
 		w.WriteHeader(403)
 		return
@@ -109,7 +112,14 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 			ValCode: result.ValidationCode,
 		}
 
-		res, _ := json.Marshal(response)
+		res, err := json.Marshal(response)
+
+		if err != nil {
+			fmt.Println("Marshal")
+			fmt.Println(err)
+			w.WriteHeader(403)
+			return
+		}
 
 		w.Write(res)
 	}
