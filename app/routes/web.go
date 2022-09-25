@@ -81,7 +81,6 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
@@ -91,37 +90,41 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var result ToggleData
+	r.Body.Close()
+	fmt.Println(string(body))
 
-	err = json.Unmarshal(body, &result)
+	if len(body) > 0 {
+		var result ToggleData
 
-	if err != nil {
-		fmt.Println("Unmarshal")
-		fmt.Println(body)
-		fmt.Println(err)
-		w.WriteHeader(403)
-		return
-	}
-
-	if result.Payload == "ping" {
-		type Response struct {
-			ValCode string `json:"validation_code"`
-		}
-
-		response := Response{
-			ValCode: result.ValidationCode,
-		}
-
-		res, err := json.Marshal(response)
+		err = json.Unmarshal(body, &result)
 
 		if err != nil {
-			fmt.Println("Marshal")
+			fmt.Println("Unmarshal")
 			fmt.Println(err)
 			w.WriteHeader(403)
 			return
 		}
 
-		w.Write(res)
+		if result.Payload == "ping" {
+			type Response struct {
+				ValCode string `json:"validation_code"`
+			}
+
+			response := Response{
+				ValCode: result.ValidationCode,
+			}
+
+			res, err := json.Marshal(response)
+
+			if err != nil {
+				fmt.Println("Marshal")
+				fmt.Println(err)
+				w.WriteHeader(403)
+				return
+			}
+
+			w.Write(res)
+		}
 	}
 
 	w.WriteHeader(200)
