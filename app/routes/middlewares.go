@@ -1,10 +1,8 @@
 package routes
 
 import (
-	"gitlab-telegram-notification-go/toggl"
-	"io/ioutil"
+	"fmt"
 	"net/http"
-	"os"
 )
 
 func ToggleWebhookSignature(next http.Handler) http.Handler {
@@ -16,19 +14,23 @@ func ToggleWebhookSignature(next http.Handler) http.Handler {
 			return
 		}
 
-		secret := os.Getenv("TOGGLE_SECRET")
+		//secret := os.Getenv("TOGGLE_SECRET")
 
-		defer r.Body.Close()
-		body, err := ioutil.ReadAll(r.Body)
+		err := r.ParseForm()
 		if err != nil {
-			w.WriteHeader(500)
+			w.WriteHeader(403)
+			fmt.Println(err)
 			return
 		}
 
-		if !toggl.HmacIsValid(string(body), signature, secret) {
-			w.WriteHeader(403)
-		} else {
-			next.ServeHTTP(w, r)
-		}
+		fmt.Println(r.Form)
+		fmt.Println(r.PostForm)
+
+		//if !toggl.HmacIsValid(string(bodyData), signature, secret) {
+		//	w.WriteHeader(403)
+		//	return
+		//}
+
+		next.ServeHTTP(w, r)
 	})
 }

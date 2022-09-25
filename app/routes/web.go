@@ -81,7 +81,8 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := r.GetBody()
+	bodyData, err := ioutil.ReadAll(body)
 
 	if err != nil {
 		fmt.Println("ReadAll")
@@ -90,13 +91,15 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body.Close()
-	fmt.Println(string(body))
+	body.Close()
+	fmt.Println(string(bodyData))
+	fmt.Println(r.Form)
+	fmt.Println(r.PostForm)
 
-	if len(body) > 0 {
+	if len(bodyData) > 0 {
 		var result ToggleData
 
-		err = json.Unmarshal(body, &result)
+		err = json.Unmarshal(bodyData, &result)
 
 		if err != nil {
 			fmt.Println("Unmarshal")
