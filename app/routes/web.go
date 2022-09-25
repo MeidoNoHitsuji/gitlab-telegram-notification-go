@@ -2,12 +2,13 @@ package routes
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
 	"gitlab-telegram-notification-go/gitclient"
+	"gitlab-telegram-notification-go/toggl"
 	"html/template"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -77,57 +78,58 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	if vars["user_id"] == "" {
-		http.Error(w, "Вы не передали параметр user_id", http.StatusUnprocessableEntity)
+		http.Error(w, "user_id not found", http.StatusUnprocessableEntity)
 		return
 	}
 
-	body := r.Body
-	bodyData, err := ioutil.ReadAll(body)
+	signature := r.Header.Get("X-Webhook-Signature-256")
+
+	if signature == "" {
+		http.Error(w, "X-Webhook-Signature-256 not found", http.StatusBadRequest)
+		return
+	}
+
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
-		fmt.Println("ReadAll")
-		fmt.Println(err)
-		w.WriteHeader(403)
+		http.Error(w, "Body not found", http.StatusBadRequest)
 		return
 	}
 
-	body.Close()
-	fmt.Println(string(bodyData))
-	fmt.Println(r.Form)
-	fmt.Println(r.PostForm)
+	secret := os.Getenv("TOGGLE_SECRET")
 
-	if len(bodyData) > 0 {
-		var result ToggleData
+	if !toggl.HmacIsValid(string(body), signature, secret) {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-		err = json.Unmarshal(bodyData, &result)
+	var result ToggleData
+
+	err = json.Unmarshal(body, &result)
+
+	if err != nil {
+		http.Error(w, "Bad Body", http.StatusBadRequest)
+		return
+	}
+
+	if result.Payload == "ping" {
+		type Response struct {
+			ValCode string `json:"validation_code"`
+		}
+
+		response := Response{
+			ValCode: result.ValidationCode,
+		}
+
+		res, err := json.Marshal(response)
 
 		if err != nil {
-			fmt.Println("Unmarshal")
-			fmt.Println(err)
-			w.WriteHeader(403)
+			http.Error(w, "Bad Body", http.StatusBadRequest)
 			return
 		}
 
-		if result.Payload == "ping" {
-			type Response struct {
-				ValCode string `json:"validation_code"`
-			}
-
-			response := Response{
-				ValCode: result.ValidationCode,
-			}
-
-			res, err := json.Marshal(response)
-
-			if err != nil {
-				fmt.Println("Marshal")
-				fmt.Println(err)
-				w.WriteHeader(403)
-				return
-			}
-
-			w.Write(res)
-		}
+		w.Write(res)
 	}
 
 	w.WriteHeader(200)
