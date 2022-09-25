@@ -161,6 +161,43 @@ func UpdateSubscriptions(workspaceId int, subscriptionId int, token string, data
 	}
 }
 
+func EnableSubscriptions(workspaceId int, subscriptionId int, enabled bool, token string) (*SubscriptionData, error) {
+
+	var data struct {
+		Enabled bool `json:"enabled"`
+	}
+
+	data.Enabled = enabled
+
+	out, err := json.Marshal(data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := builder(
+		WebhookType,
+		http.MethodPatch,
+		fmt.Sprintf("subscriptions/%d/%d", workspaceId, subscriptionId),
+		token,
+		out,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result SubscriptionData
+
+	err = json.Unmarshal([]byte(response), &result)
+
+	if err != nil {
+		return nil, err
+	} else {
+		return &result, nil
+	}
+}
+
 func GetSubscriptions(workspaceId int, token string) ([]*SubscriptionData, error) {
 	response, err := builder(WebhookType, http.MethodGet, fmt.Sprintf("subscriptions/%d", workspaceId), token, nil)
 

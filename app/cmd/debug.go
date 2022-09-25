@@ -6,7 +6,6 @@ import (
 	"gitlab-telegram-notification-go/database"
 	"gitlab-telegram-notification-go/models"
 	"gitlab-telegram-notification-go/toggl"
-	"os"
 )
 
 var debugCmd = &cobra.Command{
@@ -53,21 +52,8 @@ func debug(cmd *cobra.Command, args []string) {
 		fmt.Println(r)
 	}
 
-	url := fmt.Sprintf("%s/%d", os.Getenv("TOGGLE_WEBHOOK_URL"), userData.Id)
-
 	for _, data := range r {
-		res, err := toggl.UpdateSubscriptions(userData.DefaultWorkspaceId, data.SubscriptionId, token.Token, toggl.SubscriptionData{
-			Enabled:     false,
-			UrlCallback: url,
-			Description: "Какое-то описание",
-			EventFilters: []toggl.SubscriptionEventData{
-				{
-					Action: "*",
-					Entity: "time_entry",
-				},
-			},
-		})
-
+		res, err := toggl.EnableSubscriptions(userData.DefaultWorkspaceId, data.SubscriptionId, true, token.Token)
 		if err != nil {
 			fmt.Println(err)
 		} else {

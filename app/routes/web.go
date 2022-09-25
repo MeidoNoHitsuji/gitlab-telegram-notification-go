@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gorilla/mux"
 	"gitlab-telegram-notification-go/gitclient"
 	"gitlab-telegram-notification-go/toggl"
@@ -98,6 +99,8 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	secret := os.Getenv("TOGGLE_SECRET")
+
+	fmt.Println(string(body))
 
 	if !toggl.HmacIsValid(string(body), signature, secret) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
