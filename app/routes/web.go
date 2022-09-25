@@ -81,7 +81,7 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := r.GetBody()
+	body := r.Body
 	bodyData, err := ioutil.ReadAll(body)
 
 	if err != nil {
