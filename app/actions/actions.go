@@ -28,6 +28,7 @@ func GetActualActions() []BaseInterface {
 		NewTestAction(),
 		NewStartAction(),
 		NewUserSettingsAction(),
+		NewUserIntegrationsAction(),
 		NewUserSettingTokensAction(),
 		NewUserSettingEnterTokenAction(),
 		NewSayAction(),

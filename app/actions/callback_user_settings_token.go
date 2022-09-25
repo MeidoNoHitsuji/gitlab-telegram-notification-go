@@ -196,8 +196,8 @@ func (act *UserSettingTokensAction) Active(update tgbotapi.Update) error {
 
 func ActualIntegrationTokens() map[string]string {
 	return map[string]string{
-		"jira":   "Jira",
-		"toggle": "Toggle",
-		"gitlab": "Gitlab",
+		models.JiraToken:   "Jira",
+		models.ToggleToken: "Toggle",
+		models.GitlabToken: "Gitlab",
 	}
 }

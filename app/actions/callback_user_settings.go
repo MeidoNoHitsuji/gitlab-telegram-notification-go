@@ -48,7 +48,16 @@ func (act *UserSettingsAction) Active(update tgbotapi.Update) error {
 		return err
 	}
 
+	integrationsOut, err := json.Marshal(
+		callbacks.NewUserIntegrationsType(),
+	)
+
+	if err != nil {
+		return err
+	}
+
 	keyboards = append(keyboards, tgbotapi.NewInlineKeyboardRow(
+		tgbotapi.NewInlineKeyboardButtonData("Интеграции", string(integrationsOut)),
 		tgbotapi.NewInlineKeyboardButtonData("Токены", string(tokensOut)),
 	))
 

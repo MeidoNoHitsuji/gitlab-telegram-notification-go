@@ -3,8 +3,9 @@ package models
 import "gorm.io/gorm"
 
 const (
-	ToggleTrackerTokenType = "toggle_tracker"
-	JiraTokenType          = "jira"
+	JiraToken   = "jira"
+	ToggleToken = "toggle"
+	GitlabToken = "gitlab"
 )
 
 type UserToken struct {

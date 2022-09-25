@@ -24,7 +24,7 @@ func debug(cmd *cobra.Command, args []string) {
 	db := database.Instant()
 
 	db.Where(models.UserToken{
-		TokenType: "toggle",
+		TokenType: models.ToggleToken,
 		User: models.User{
 			TelegramChannelId: 479413765,
 		},

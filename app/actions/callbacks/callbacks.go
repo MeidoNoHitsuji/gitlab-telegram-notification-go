@@ -9,6 +9,7 @@ const (
 	TomatoFailNameFuncName        CallbackFuncName = "tf_func"   //tomato_fail
 	UserSettingsFuncName          CallbackFuncName = "us_func"   //user_settings
 	UserSettingTokensFuncName     CallbackFuncName = "ust_func"  //user_setting_tokens
+	UserIntegrationsFuncName      CallbackFuncName = "ui_func"   //user_integrations
 	UserSettingEnterTokenFuncName CallbackFuncName = "uset_func" //user_setting_enter_token
 	SelectProjectSettingsFuncName CallbackFuncName = "sps_func"  //select_project_settings
 	SelectFilterFuncName          CallbackFuncName = "sf_func"   //select_filter
@@ -69,6 +70,28 @@ func NewUserSettingsType() *UserSettingsType {
 		DefaultType: DefaultType{
 			FuncName: UserSettingsFuncName,
 		},
+	}
+}
+
+type UserIntegrationsType struct {
+	DefaultType
+	IntegrationType string `json:"it"`
+}
+
+func NewUserIntegrationsType() *UserIntegrationsType {
+	return &UserIntegrationsType{
+		DefaultType: DefaultType{
+			FuncName: UserIntegrationsFuncName,
+		},
+	}
+}
+
+func NewUserIntegrationsWithTypeType(typeIntegration string) *UserIntegrationsType {
+	return &UserIntegrationsType{
+		DefaultType: DefaultType{
+			FuncName: UserIntegrationsFuncName,
+		},
+		IntegrationType: typeIntegration,
 	}
 }
 
