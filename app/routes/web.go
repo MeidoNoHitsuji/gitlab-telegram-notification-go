@@ -86,6 +86,7 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 	signature := r.Header.Get("X-Webhook-Signature-256")
 
 	if signature == "" {
+		fmt.Println("X-Webhook-Signature-256 not found")
 		http.Error(w, "X-Webhook-Signature-256 not found", http.StatusBadRequest)
 		return
 	}
@@ -94,6 +95,7 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
+		fmt.Println("Body not found")
 		http.Error(w, "Body not found", http.StatusBadRequest)
 		return
 	}
@@ -103,20 +105,16 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(string(body))
 
 	if !toggl.HmacIsValid(string(body), signature, secret) {
+		fmt.Println("Unauthorized")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	var result ToggleData
+	var result ValidationData
 
 	err = json.Unmarshal(body, &result)
 
-	if err != nil {
-		http.Error(w, "Bad Body", http.StatusBadRequest)
-		return
-	}
-
-	if result.Payload == "ping" {
+	if err == nil && result.Payload == "ping" {
 		type Response struct {
 			ValCode string `json:"validation_code"`
 		}
@@ -133,6 +131,19 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Write(res)
+		w.WriteHeader(200)
+		return
+	} else if result.Payload != "ping" {
+		w.WriteHeader(200)
+		return
+	}
+
+	var data ToggleData
+
+	err = json.Unmarshal(body, &data)
+
+	if err != nil {
+		fmt.Println(err)
 	}
 
 	w.WriteHeader(200)
