@@ -1,21 +1,22 @@
 package actions
 
 import (
-	"errors"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"gitlab-telegram-notification-go/database"
 	"gitlab-telegram-notification-go/telegram"
 )
 
-type ActionErrorType error
-
 type ErrorForUser struct {
-	ActionErrorType
+	Message string
 }
 
-func NewErrorForUser(s string) *ErrorForUser {
-	return &ErrorForUser{
-		ActionErrorType: errors.New(s),
+func (e ErrorForUser) Error() string {
+	return e.Message
+}
+
+func NewErrorForUser(s string) ErrorForUser {
+	return ErrorForUser{
+		Message: s,
 	}
 }
 
@@ -44,7 +45,7 @@ func GetActualActions() []BaseInterface {
 	}
 }
 
-func Active(update tgbotapi.Update) ActionErrorType {
+func Active(update tgbotapi.Update) error {
 	for _, action := range GetActualActions() {
 		if action.Validate(update) {
 

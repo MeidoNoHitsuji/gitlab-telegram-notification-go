@@ -65,9 +65,8 @@ func (act *UserIntegrationsAction) Active(update tgbotapi.Update) error {
 			TokenType: models.ToggleToken,
 		}).First(&token)
 
-		if res.RowsAffected == 0 {
-			//TODO: Уведомление о том, что токена Toggle нет!
-			break
+		if res.RowsAffected == 0 || token.Token == "" {
+			return NewErrorForUser("У вас отсутствует токен Toggle")
 		}
 
 		res = db.Where(models.UserToken{
@@ -77,12 +76,27 @@ func (act *UserIntegrationsAction) Active(update tgbotapi.Update) error {
 			TokenType: models.JiraToken,
 		}).First(&token)
 
-		if res.RowsAffected == 0 {
-			//TODO: Уведомление о том, что токена Jira нет!
-			break
+		if res.RowsAffected == 0 || token.Token == "" {
+			return NewErrorForUser("У вас отсутствует токен Jira")
 		}
 
-		//TODO: Создать/обновить интеграцию!
+		//var integration models.UserIntegrations
+		//
+		//res = db.Where(models.UserIntegrations{
+		//	IntegrationType: models.ToggleJiraIntegration,
+		//	User: models.User{
+		//		TelegramChannelId: chatId,
+		//	},
+		//}).First(&integration)
+		//
+		//if res.RowsAffected == 0 {
+		//	integration.Active = true
+		//	db.Omit("User").Create(&integration)
+		//} else {
+		//	integration.Active = !integration.Active
+		//	db.Omit("User").Save(&integration)
+		//}
+
 		break
 	default:
 		break
@@ -154,7 +168,7 @@ func (act *UserIntegrationsAction) Active(update tgbotapi.Update) error {
 
 	telegram.UpdateMessageWithParseById(
 		message,
-		"Выбери какие настройки пользователя ты хочешь изменить.",
+		text,
 		tgbotapi.NewInlineKeyboardMarkup(keyboards...),
 	)
 

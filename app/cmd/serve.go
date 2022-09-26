@@ -62,11 +62,27 @@ func serve(cmd *cobra.Command, args []string) {
 		err := actions.Active(update)
 
 		if err != nil {
-			switch err.(type) {
+			switch err := err.(type) {
 			case actions.ErrorForUser:
-				telegram.SendMessageById(update.Message.Chat.ID, err.Error(), nil, nil)
+				if update.CallbackQuery != nil {
+					callback := tgbotapi.NewCallbackWithAlert(
+						update.CallbackQuery.ID,
+						err.Error(),
+					)
+					bot.Request(callback)
+				} else {
+					telegram.SendMessageById(update.Message.Chat.ID, err.Error(), nil, nil)
+				}
 			default:
 				fmt.Println(err.Error())
+			}
+		} else {
+			if update.CallbackQuery != nil {
+				callback := tgbotapi.NewCallback(
+					update.CallbackQuery.ID,
+					"",
+				)
+				bot.Request(callback)
 			}
 		}
 	}
