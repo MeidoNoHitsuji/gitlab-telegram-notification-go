@@ -119,11 +119,14 @@ func (act *UserSettingTokensAction) Active(update tgbotapi.Update) error {
 	text := "Тут ты можешь поменять токены от различных сервисов, с которыми настроена интеграция."
 
 	var tokens []models.UserToken
+	var user models.User
+
+	db.Where(models.User{
+		TelegramChannelId: chatId,
+	}).First(&user)
 
 	db.Where(models.UserToken{
-		User: models.User{
-			TelegramChannelId: chatId,
-		},
+		UserId: user.ID,
 	}).Find(&tokens)
 
 	text = fmt.Sprintf("%s\n—————\nИмеющиеся токены:", text)

@@ -109,7 +109,7 @@ func Events() (*[]Event, error) {
 	}
 }
 
-func CreateSubscriptions(workspaceId int, token string, data SubscriptionData) (*SubscriptionData, error) {
+func CreateSubscription(workspaceId int, token string, data SubscriptionData) (*SubscriptionData, error) {
 	data.Secret = os.Getenv("TOGGLE_SECRET")
 
 	out, err := json.Marshal(data)
@@ -161,7 +161,7 @@ func UpdateSubscriptions(workspaceId int, subscriptionId int, token string, data
 	}
 }
 
-func EnableSubscriptions(workspaceId int, subscriptionId int, enabled bool, token string) (*SubscriptionData, error) {
+func EnableSubscription(workspaceId int, subscriptionId int, enabled bool, token string) (*SubscriptionData, error) {
 
 	var data struct {
 		Enabled bool `json:"enabled"`

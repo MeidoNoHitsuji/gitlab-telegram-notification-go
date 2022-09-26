@@ -12,6 +12,7 @@ import (
 	fm "gitlab-telegram-notification-go/helper/formater"
 	"gitlab-telegram-notification-go/models"
 	"gitlab-telegram-notification-go/telegram"
+	"gitlab-telegram-notification-go/toggl"
 )
 
 const UserIntegrationsActionType ActionNameType = "ui_act" //user_integrations
@@ -52,16 +53,19 @@ func (act *UserIntegrationsAction) Active(update tgbotapi.Update) error {
 	}
 
 	var token models.UserToken
+	var user models.User
 
 	db := database.Instant()
 	chatId, _ := GetChatIdAndUsernameByUpdate(update)
 
+	db.Where(models.User{
+		TelegramChannelId: chatId,
+	}).First(&user)
+
 	switch act.CallbackData.IntegrationType {
 	case models.ToggleJiraIntegration:
 		res := db.Where(models.UserToken{
-			User: models.User{
-				TelegramChannelId: chatId,
-			},
+			UserId:    user.ID,
 			TokenType: models.ToggleToken,
 		}).First(&token)
 
@@ -69,10 +73,9 @@ func (act *UserIntegrationsAction) Active(update tgbotapi.Update) error {
 			return NewErrorForUser("У вас отсутствует токен Toggle")
 		}
 
+		token = models.UserToken{}
 		res = db.Where(models.UserToken{
-			User: models.User{
-				TelegramChannelId: chatId,
-			},
+			UserId:    user.ID,
 			TokenType: models.JiraToken,
 		}).First(&token)
 
@@ -80,22 +83,31 @@ func (act *UserIntegrationsAction) Active(update tgbotapi.Update) error {
 			return NewErrorForUser("У вас отсутствует токен Jira")
 		}
 
-		//var integration models.UserIntegrations
-		//
-		//res = db.Where(models.UserIntegrations{
-		//	IntegrationType: models.ToggleJiraIntegration,
-		//	User: models.User{
-		//		TelegramChannelId: chatId,
-		//	},
-		//}).First(&integration)
-		//
-		//if res.RowsAffected == 0 {
-		//	integration.Active = true
-		//	db.Omit("User").Create(&integration)
-		//} else {
-		//	integration.Active = !integration.Active
-		//	db.Omit("User").Save(&integration)
-		//}
+		var integration models.UserIntegrations
+		var user models.User
+
+		db.Where(models.User{
+			TelegramChannelId: chatId,
+		}).First(&user)
+
+		res = db.Where(models.UserIntegrations{
+			IntegrationType: models.ToggleJiraIntegration,
+			User:            user,
+		}).First(&integration)
+
+		if res.RowsAffected == 0 {
+			integration.Active = true
+			integration.UserId = user.ID
+			integration.IntegrationType = models.ToggleJiraIntegration
+			db.Omit("User").Create(&integration)
+		} else {
+			integration.Active = !integration.Active
+			db.Omit("User").Save(&integration)
+		}
+
+		if err := toggl.ActiveSubscription(chatId, integration.Active); err != nil {
+			return NewErrorForUser(err.Error())
+		}
 
 		break
 	default:
@@ -115,17 +127,31 @@ func (act *UserIntegrationsAction) Active(update tgbotapi.Update) error {
 		keysIntegration = append(keysIntegration, key)
 		var integration models.UserIntegrations
 		var t string
+
 		result := db.Where(models.UserIntegrations{
-			User: models.User{
-				TelegramChannelId: chatId,
-			},
+			UserId:          user.ID,
 			IntegrationType: key,
 		}).First(&integration)
 
-		if result.RowsAffected == 0 || !integration.Active {
+		if result.RowsAffected == 0 {
 			t = "Выкл"
 		} else {
-			t = "Вкл"
+			enabled, err := toggl.GetStatusSubscription(chatId)
+
+			if err != nil {
+				return NewErrorForUser(err.Error())
+			}
+
+			if enabled != integration.Active {
+				integration.Active = enabled
+				db.Omit("User").Save(&integration)
+			}
+
+			if integration.Active {
+				t = "Вкл"
+			} else {
+				t = "Выкл"
+			}
 		}
 
 		text = fmt.Sprintf("%s\n%d. %s: %s.\n%s", text, i, fm.Underline(data["title"]), fm.Bold(t), fm.Italic(data["description"]))

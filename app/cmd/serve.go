@@ -55,7 +55,7 @@ func serve(cmd *cobra.Command, args []string) {
 			}
 		}
 
-		if update.Message != nil {
+		if update.Message != nil && update.Message.Chat.ID > 0 {
 			database.UpdateMemberStatus(update.Message.Chat.ID, update.Message.From.UserName, false)
 		}
 

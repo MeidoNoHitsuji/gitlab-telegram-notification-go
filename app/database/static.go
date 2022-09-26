@@ -14,14 +14,15 @@ func UpdateMemberStatus(telegramId int64, username string, isDeleted bool) *mode
 	channel := UpdateChatStatus(telegramId, isDeleted)
 
 	db := Instant()
-	user := models.User{
-		TelegramChannelId: channel.ID,
-	}
+	var user models.User
 
-	res := db.Find(&user)
+	res := db.Where(models.User{
+		TelegramChannelId: channel.ID,
+	}).First(&user)
 
 	username = strings.ToLower(username)
 	if res.RowsAffected == 0 {
+		user.TelegramChannelId = channel.ID
 		user.Username = username
 		db.Create(&user)
 	} else if user.Username != username {
@@ -34,14 +35,22 @@ func UpdateMemberStatus(telegramId int64, username string, isDeleted bool) *mode
 
 func UpdateChatStatus(telegramId int64, isDeleted bool) *models.TelegramChannel {
 	db := Instant()
-	channel := models.TelegramChannel{
+
+	var channel models.TelegramChannel
+
+	res := db.Where(models.TelegramChannel{
 		ID: telegramId,
-	}
-	db.Model(&models.TelegramChannel{}).FirstOrCreate(&channel)
-	if channel.Active != !isDeleted {
+	}).Find(&channel)
+
+	if res.RowsAffected == 0 {
+		channel.ID = telegramId
+		channel.Active = !isDeleted
+		db.Create(&channel)
+	} else if channel.Active == isDeleted {
 		channel.Active = !isDeleted
 		db.Save(&channel)
 	}
+
 	return &channel
 }
 
@@ -244,7 +253,7 @@ func GetUserActionInChannel(telegramId int64, username string) *models.UserTeleg
 
 	builder := db.Model(&models.UserTelegramChannelAction{}).Joins("inner join users as user on user_telegram_channel_actions.user_id = user.id")
 	builder = builder.Where("user_telegram_channel_actions.telegram_channel_id = ?", telegramId)
-	builder = builder.Where("user.username = ?", username)
+	builder = builder.Where("user.username = ?", strings.ToLower(username))
 	builder = builder.Find(&obj)
 
 	if builder.RowsAffected == 0 {
@@ -274,11 +283,11 @@ func CreateUserActionInChannel(telegramId int64, username string, action string)
 
 	obj := models.UserTelegramChannelAction{}
 
-	user := &models.User{
-		Username: username,
-	}
+	var user models.User
 
-	r := db.Model(&models.User{}).Find(&user)
+	r := db.Where(models.User{
+		Username: strings.ToLower(username),
+	}).Find(&user)
 
 	if r.RowsAffected == 0 {
 		return errors.New("Такой пользователь не найден!")
@@ -301,19 +310,6 @@ func UpdateUserActionParameterInChannel(telegramId int64, username string, param
 	} else {
 		db := Instant()
 		db.Model(&models.UserTelegramChannelAction{}).Where(obj).Update("parameters", parameters)
-	}
-
-	return nil
-}
-
-func UpdateUserActionFormatterInChannel(telegramId int64, username string, formatter string) error {
-	obj := GetUserActionInChannel(telegramId, username)
-
-	if obj == nil {
-		return errors.New("Action не был найден!")
-	} else {
-		db := Instant()
-		db.Model(&models.UserTelegramChannelAction{}).Where(obj).Update("formatter", formatter)
 	}
 
 	return nil

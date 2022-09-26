@@ -1,9 +1,11 @@
 package actions
 
 import (
+	"errors"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"gitlab-telegram-notification-go/database"
 	"gitlab-telegram-notification-go/telegram"
+	"strings"
 )
 
 type ErrorForUser struct {
@@ -60,7 +62,7 @@ func Active(update tgbotapi.Update) error {
 		}
 	}
 
-	return nil
+	return errors.New("Я не понимаю, что от меня хочет пользователь.")
 }
 
 func UpdateActualActionParameter(update tgbotapi.Update, parameter string) {
@@ -77,20 +79,6 @@ func UpdateActualActionParameter(update tgbotapi.Update, parameter string) {
 	)
 }
 
-func UpdateActualActionFormatter(update tgbotapi.Update, formatter string) {
-	chatId, username := GetChatIdAndUsernameByUpdate(update)
-
-	if chatId == 0 {
-		return
-	}
-
-	database.UpdateUserActionFormatterInChannel(
-		chatId,
-		username,
-		formatter,
-	)
-}
-
 func UpdateActualAction(update tgbotapi.Update, action BaseInterface) {
 	actionName := action.GetActionName()
 
@@ -104,7 +92,7 @@ func UpdateActualAction(update tgbotapi.Update, action BaseInterface) {
 
 		database.UpdateUserActionInChannel(
 			chatId,
-			username,
+			strings.ToLower(username),
 			string(actionName),
 		)
 	}
@@ -112,9 +100,9 @@ func UpdateActualAction(update tgbotapi.Update, action BaseInterface) {
 
 func GetChatIdAndUsernameByUpdate(update tgbotapi.Update) (int64, string) {
 	if update.CallbackQuery != nil {
-		return update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.From.UserName
+		return update.CallbackQuery.Message.Chat.ID, strings.ToLower(update.CallbackQuery.From.UserName)
 	} else if update.Message != nil {
-		return update.Message.Chat.ID, update.Message.From.UserName
+		return update.Message.Chat.ID, strings.ToLower(update.Message.From.UserName)
 	} else {
 		return 0, ""
 	}
