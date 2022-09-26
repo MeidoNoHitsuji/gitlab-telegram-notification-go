@@ -18,9 +18,13 @@ func UpdateMemberStatus(telegramId int64, username string, isDeleted bool) *mode
 		TelegramChannelId: channel.ID,
 	}
 
-	db.Model(&models.User{}).FirstOrCreate(&user)
+	res := db.Find(&user)
+
 	username = strings.ToLower(username)
-	if user.Username != username {
+	if res.RowsAffected == 0 {
+		user.Username = username
+		db.Create(&user)
+	} else if user.Username != username {
 		user.Username = username
 		db.Save(&user)
 	}

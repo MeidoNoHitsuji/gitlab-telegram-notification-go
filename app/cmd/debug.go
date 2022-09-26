@@ -36,14 +36,6 @@ func debug(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	result, err := toggl.Events()
-
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(result)
-	}
-
 	r, err := toggl.GetSubscriptions(userData.DefaultWorkspaceId, token.Token)
 
 	if err != nil {
