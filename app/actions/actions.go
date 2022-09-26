@@ -60,7 +60,7 @@ func Active(update tgbotapi.Update) error {
 		}
 	}
 
-	return NewErrorForUser("Я не понимаю, что ты от меня хочешь.")
+	return nil
 }
 
 func UpdateActualActionParameter(update tgbotapi.Update, parameter string) {

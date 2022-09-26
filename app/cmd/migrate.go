@@ -19,8 +19,6 @@ func init() {
 func migrate(cmd *cobra.Command, args []string) error {
 	db := database.Instant()
 
-	db.Exec("ALTER TABLE `subscribe_events` ADD `id` bigint unsigned primary key AUTO_INCREMENT")
-
 	ms := []interface{}{
 		&models.TelegramChannel{},
 		&models.User{},
