@@ -141,7 +141,8 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		w.Write(res)
 		w.WriteHeader(200)
 		return
-	} else if result.Payload != "ping" {
+	} else if err == nil {
+		fmt.Println("Неизвестный запрос!!")
 		w.WriteHeader(200)
 		return
 	}
@@ -157,7 +158,6 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if data.Metadata.Action == "updated" {
-
 		jiraclient.UpdateJiraWorklog(telegramChannelId, data)
 	} else if data.Metadata.Action == "deleted" {
 		jiraclient.DeleteJiraWorklog(telegramChannelId, data)

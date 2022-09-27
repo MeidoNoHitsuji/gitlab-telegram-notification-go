@@ -9,6 +9,7 @@ func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 	issueKey := GetIssueKeyFromText(data.Payload.Description)
 
 	if issueKey == "" {
+		fmt.Println("Ключ не найден!!")
 		return
 	}
 
