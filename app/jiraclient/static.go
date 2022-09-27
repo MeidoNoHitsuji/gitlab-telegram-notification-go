@@ -21,6 +21,7 @@ func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 	client, err := New(telegramChannelId)
 
 	if err != nil {
+		fmt.Println("Ошибка создания слиента")
 		fmt.Println(err)
 		return
 	}
@@ -35,6 +36,7 @@ func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 	issue, _, err := client.Issue.Get(issueKey, &jira.GetQueryOptions{})
 
 	if err != nil {
+		fmt.Println("Ошибка запроса задачи " + issueKey)
 		fmt.Println(err)
 		return
 	}
@@ -47,6 +49,7 @@ func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 	me, _, err := client.User.GetSelf()
 
 	if err != nil {
+		fmt.Println("Ошибка самого себя")
 		fmt.Println(err)
 		return
 	}
@@ -61,6 +64,7 @@ func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 		eventIntegration.IssueId, err = strconv.Atoi(issue.ID)
 
 		if err != nil {
+			fmt.Println("Ошибка парсинга issue.ID - " + issue.ID)
 			fmt.Println(err)
 			return
 		}
@@ -72,6 +76,7 @@ func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 		})
 
 		if err != nil {
+			fmt.Println("Ошибка добавления времени")
 			fmt.Println(err)
 			return
 		}
@@ -79,6 +84,7 @@ func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 		eventIntegration.WorklogRecordId, err = strconv.Atoi(worklogRecord.ID)
 
 		if err != nil {
+			fmt.Println("Ошибка парсинга worklogRecord.ID - " + worklogRecord.ID)
 			fmt.Println(err)
 			return
 		}
