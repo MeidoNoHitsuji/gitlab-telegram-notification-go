@@ -1,6 +1,10 @@
 package jiraclient
 
-import "regexp"
+import (
+	"github.com/andygrunwald/go-jira"
+	"regexp"
+	"time"
+)
 
 func GetIssueKeyFromText(text string) string {
 	re, _ := regexp.Compile(`(?m)^[A-Z-\d]+`)
@@ -11,4 +15,10 @@ func GetIssueKeyFromText(text string) string {
 	}
 
 	return res[0]
+}
+
+func getTime(original time.Time) *jira.Time {
+	jiraTime := jira.Time(original)
+
+	return &jiraTime
 }

@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/gorilla/mux"
 	"github.com/xanzy/go-gitlab"
+	"time"
 )
 
 func New(Secret string) *mux.Router {
@@ -22,5 +23,20 @@ func New(Secret string) *mux.Router {
 	router.HandleFunc("/webhook/toggle/{user_telegram_id}", WebToggle).Methods("POST")
 	router.HandleFunc("/webhook/toggle/{user_id}", GetWebToggle).Methods("GET")
 
+	go throttleToggleEvents()
+
 	return router
+}
+
+func throttleToggleEvents() {
+	for {
+		newLimited := make(map[int64]time.Time)
+		for e, t := range limited {
+			if time.Now().Before(t) {
+				newLimited[e] = t
+			}
+		}
+		limited = newLimited
+		time.Sleep(1 * time.Second)
+	}
 }

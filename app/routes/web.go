@@ -14,6 +14,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
+)
+
+var (
+	limited map[int64]time.Time
 )
 
 func WebIndex(w http.ResponseWriter, r *http.Request) {
@@ -157,11 +162,18 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if _, ok := limited[data.EventId]; ok {
+		w.WriteHeader(200)
+		return
+	}
+
 	if data.Metadata.Action == "updated" {
 		jiraclient.UpdateJiraWorklog(telegramChannelId, data)
 	} else if data.Metadata.Action == "deleted" {
 		jiraclient.DeleteJiraWorklog(telegramChannelId, data)
 	}
+
+	limited[data.EventId] = time.Now().Add(10 * time.Second)
 
 	w.WriteHeader(200)
 }
