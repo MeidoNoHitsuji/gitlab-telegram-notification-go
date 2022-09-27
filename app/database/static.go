@@ -151,59 +151,7 @@ func GetSubscribesByProjectIdAndKind(filter GetSubscribesFilter) []models.Subscr
 		p3 := "JSON_CONTAINS(subscribe_events.parameters, JSON_ARRAY(?), '$.is_merge')"
 		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.IsMerge)
 	}
-
-	builder = builder.Group("subscribes.id")
 	builder = builder.Find(&subscribes)
-
-	//for _, subscribe := range subscribes {
-	//
-	//	var events []models.SubscribeEvent
-	//	for _, event := range subscribe.Events {
-	//		fmt.Println(event.ID)
-	//		if filter.Event != "" && filter.Event != event.Event {
-	//			continue
-	//		}
-	//
-	//		if filter.Status != "" {
-	//			obj, ok := event.Parameters["status"]
-	//			if ok && !helper.Contains(obj, filter.Status) {
-	//				continue
-	//			}
-	//		}
-	//
-	//		if filter.AuthorUsername != "" {
-	//			obj, ok := event.Parameters["author_username"]
-	//			if ok && !helper.Contains(obj, filter.AuthorUsername) {
-	//				continue
-	//			}
-	//		}
-	//
-	//		if filter.ToBranchName != "" {
-	//			obj, ok := event.Parameters["to_branch_name"]
-	//			if ok && !helper.Contains(obj, filter.ToBranchName) {
-	//				continue
-	//			}
-	//		}
-	//
-	//		if filter.FromBranchName != "" {
-	//			obj, ok := event.Parameters["from_branch_name"]
-	//			if ok && !helper.Contains(obj, filter.FromBranchName) {
-	//				continue
-	//			}
-	//		}
-	//
-	//		if filter.IsMerge != "" {
-	//			obj, ok := event.Parameters["is_merge"]
-	//			if ok && !helper.Contains(obj, filter.IsMerge) {
-	//				continue
-	//			}
-	//		}
-	//
-	//		events = append(events, event)
-	//	}
-	//
-	//	subscribe.Events = events
-	//}
 
 	return subscribes
 }

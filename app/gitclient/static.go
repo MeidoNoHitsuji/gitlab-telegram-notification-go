@@ -158,14 +158,6 @@ func Handler(event interface{}) error {
 
 		for _, subscribeEvent := range subscribeEvents {
 
-			//if len(subscribe.Events) == 0 {
-			//	continue
-			//}
-			//
-			//subscribeEvent := subscribe.Events[0]
-			//
-			//fmt.Println("", subscribeEvent.ID)
-
 			if subscribeEvent.Formatter == "commits" {
 				data = NewPipelineCommitsType(event, commits)
 			} else if subscribeEvent.Formatter == "logs" {
