@@ -104,7 +104,7 @@ func SubscribeByProject(project *gitlab.Project) (string, error) {
 func Handler(event interface{}) error {
 	switch event := event.(type) {
 	case *gitlab.MergeEvent:
-		subscribes := database.GetSubscribesByProjectIdAndKind(database.GetSubscribesFilter{
+		subscribeEvents := database.GetSubscribesByProjectIdAndKind(database.GetSubscribesFilter{
 			ProjectId:      event.Project.ID,
 			Event:          event.ObjectKind,
 			Status:         event.ObjectAttributes.State,
@@ -113,11 +113,11 @@ func Handler(event interface{}) error {
 		})
 		var message string
 
-		for _, subscribe := range subscribes {
+		for _, subscribeEvent := range subscribeEvents {
 
 			data := MergeDefaultType{
 				Event:     event,
-				Subscribe: &subscribe,
+				Subscribe: &subscribeEvent.Subscribe,
 			}
 
 			message = data.Make()
@@ -126,7 +126,7 @@ func Handler(event interface{}) error {
 				continue
 			}
 
-			telegram.SendMessage(&subscribe.TelegramChannel, message, nil, nil)
+			telegram.SendMessageById(subscribeEvent.Subscribe.TelegramChannelId, message, nil, nil)
 		}
 	case *gitlab.PipelineEvent:
 		var message string
@@ -138,7 +138,7 @@ func Handler(event interface{}) error {
 			IsMerge = "false"
 		}
 
-		subscribes := database.GetSubscribesByProjectIdAndKind(database.GetSubscribesFilter{
+		subscribeEvents := database.GetSubscribesByProjectIdAndKind(database.GetSubscribesFilter{
 			ProjectId:      event.Project.ID,
 			Event:          event.ObjectKind,
 			Status:         event.ObjectAttributes.Status,
@@ -156,13 +156,15 @@ func Handler(event interface{}) error {
 			break
 		}
 
-		for _, subscribe := range subscribes {
+		for _, subscribeEvent := range subscribeEvents {
 
-			if len(subscribe.Events) == 0 {
-				continue
-			}
-
-			subscribeEvent := subscribe.Events[0]
+			//if len(subscribe.Events) == 0 {
+			//	continue
+			//}
+			//
+			//subscribeEvent := subscribe.Events[0]
+			//
+			//fmt.Println("", subscribeEvent.ID)
 
 			if subscribeEvent.Formatter == "commits" {
 				data = NewPipelineCommitsType(event, commits)
@@ -170,7 +172,7 @@ func Handler(event interface{}) error {
 				data = NewPipelineLogType(event, commits)
 			}
 
-			data.SetSubscribe(&subscribe)
+			data.SetSubscribe(&subscribeEvent.Subscribe)
 
 			message = data.Make(false)
 			keyboard := data.Keyboard(false)
@@ -179,7 +181,7 @@ func Handler(event interface{}) error {
 				continue
 			}
 
-			_, err := telegram.SendMessage(&subscribe.TelegramChannel, message, keyboard, nil)
+			_, err := telegram.SendMessageById(subscribeEvent.Subscribe.TelegramChannelId, message, keyboard, nil)
 
 			var errMap map[string]interface{}
 			out, _ := json.Marshal(err)
@@ -192,7 +194,7 @@ func Handler(event interface{}) error {
 					if code.(float64) == 400 {
 						message = data.Make(true)
 						keyboard = data.Keyboard(true)
-						telegram.SendMessage(&subscribe.TelegramChannel, message, keyboard, nil)
+						telegram.SendMessageById(subscribeEvent.Subscribe.TelegramChannelId, message, keyboard, nil)
 						break
 					}
 				}

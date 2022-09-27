@@ -103,104 +103,107 @@ func UpdateSubscribes(project gitlab.Project, telegramId int64, events ...string
 	return nil
 }
 
-func GetSubscribesByProjectIdAndKind(filter GetSubscribesFilter) []models.Subscribe {
-	var subscribes []models.Subscribe
+func GetSubscribesByProjectIdAndKind(filter GetSubscribesFilter) []models.SubscribeEvent {
+	var subscribes []models.SubscribeEvent
 	db := Instant()
 
-	builder := db.Model(&models.Subscribe{}).Preload("TelegramChannel").Preload("Events").Joins("inner join subscribe_events as event on event.subscribe_id = subscribes.id")
+	builder := db.Model(&models.SubscribeEvent{}).Preload("Subscribe").Joins("inner join subscribes on subscribe_events.subscribe_id = subscribes.id")
 
 	if filter.ProjectId != 0 {
 		builder = builder.Where("subscribes.project_id = ?", filter.ProjectId)
 	}
 
 	if filter.Event != "" {
-		builder = builder.Where("event.event = ?", filter.Event)
+		builder = builder.Where("subscribe_events.event = ?", filter.Event)
 	}
 
 	if filter.Status != "" {
-		p1 := "JSON_EXTRACT(event.parameters, '$.status') is null"
-		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.status')) = 0"
-		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.status')"
+		p1 := "JSON_EXTRACT(subscribe_events.parameters, '$.status') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(subscribe_events.parameters, '$.status')) = 0"
+		p3 := "JSON_CONTAINS(subscribe_events.parameters, JSON_ARRAY(?), '$.status')"
 		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.Status)
 	}
 
 	if filter.AuthorUsername != "" {
-		p1 := "JSON_EXTRACT(event.parameters, '$.author_username') is null"
-		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.author_username')) = 0"
-		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.author_username')"
+		p1 := "JSON_EXTRACT(subscribe_events.parameters, '$.author_username') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(subscribe_events.parameters, '$.author_username')) = 0"
+		p3 := "JSON_CONTAINS(subscribe_events.parameters, JSON_ARRAY(?), '$.author_username')"
 		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.AuthorUsername)
 	}
 
 	if filter.ToBranchName != "" {
-		p1 := "JSON_EXTRACT(event.parameters, '$.to_branch_name') is null"
-		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.to_branch_name')) = 0"
-		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.to_branch_name')"
+		p1 := "JSON_EXTRACT(subscribe_events.parameters, '$.to_branch_name') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(subscribe_events.parameters, '$.to_branch_name')) = 0"
+		p3 := "JSON_CONTAINS(subscribe_events.parameters, JSON_ARRAY(?), '$.to_branch_name')"
 		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.ToBranchName)
 	}
 
 	if filter.FromBranchName != "" {
-		p1 := "JSON_EXTRACT(event.parameters, '$.from_branch_name') is null"
-		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.from_branch_name')) = 0"
-		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.from_branch_name')"
+		p1 := "JSON_EXTRACT(subscribe_events.parameters, '$.from_branch_name') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(subscribe_events.parameters, '$.from_branch_name')) = 0"
+		p3 := "JSON_CONTAINS(subscribe_events.parameters, JSON_ARRAY(?), '$.from_branch_name')"
 		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.FromBranchName)
 	}
 
 	if filter.IsMerge != "" {
-		p1 := "JSON_EXTRACT(event.parameters, '$.is_merge') is null"
-		p2 := "JSON_LENGTH(JSON_EXTRACT(event.parameters, '$.is_merge')) = 0"
-		p3 := "JSON_CONTAINS(event.parameters, JSON_ARRAY(?), '$.is_merge')"
+		p1 := "JSON_EXTRACT(subscribe_events.parameters, '$.is_merge') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(subscribe_events.parameters, '$.is_merge')) = 0"
+		p3 := "JSON_CONTAINS(subscribe_events.parameters, JSON_ARRAY(?), '$.is_merge')"
 		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.IsMerge)
 	}
 
+	builder = builder.Group("subscribes.id")
 	builder = builder.Find(&subscribes)
 
-	for _, subscribe := range subscribes {
-		var events []models.SubscribeEvent
-		for _, event := range subscribe.Events {
-			if filter.Event != "" && filter.Event != event.Event {
-				continue
-			}
-
-			if filter.Status != "" {
-				obj, ok := event.Parameters["status"]
-				if ok && !helper.Contains(obj, filter.Status) {
-					continue
-				}
-			}
-
-			if filter.AuthorUsername != "" {
-				obj, ok := event.Parameters["author_username"]
-				if ok && !helper.Contains(obj, filter.AuthorUsername) {
-					continue
-				}
-			}
-
-			if filter.ToBranchName != "" {
-				obj, ok := event.Parameters["to_branch_name"]
-				if ok && !helper.Contains(obj, filter.ToBranchName) {
-					continue
-				}
-			}
-
-			if filter.FromBranchName != "" {
-				obj, ok := event.Parameters["from_branch_name"]
-				if ok && !helper.Contains(obj, filter.FromBranchName) {
-					continue
-				}
-			}
-
-			if filter.IsMerge != "" {
-				obj, ok := event.Parameters["is_merge"]
-				if ok && !helper.Contains(obj, filter.IsMerge) {
-					continue
-				}
-			}
-
-			events = append(events, event)
-		}
-
-		subscribe.Events = events
-	}
+	//for _, subscribe := range subscribes {
+	//
+	//	var events []models.SubscribeEvent
+	//	for _, event := range subscribe.Events {
+	//		fmt.Println(event.ID)
+	//		if filter.Event != "" && filter.Event != event.Event {
+	//			continue
+	//		}
+	//
+	//		if filter.Status != "" {
+	//			obj, ok := event.Parameters["status"]
+	//			if ok && !helper.Contains(obj, filter.Status) {
+	//				continue
+	//			}
+	//		}
+	//
+	//		if filter.AuthorUsername != "" {
+	//			obj, ok := event.Parameters["author_username"]
+	//			if ok && !helper.Contains(obj, filter.AuthorUsername) {
+	//				continue
+	//			}
+	//		}
+	//
+	//		if filter.ToBranchName != "" {
+	//			obj, ok := event.Parameters["to_branch_name"]
+	//			if ok && !helper.Contains(obj, filter.ToBranchName) {
+	//				continue
+	//			}
+	//		}
+	//
+	//		if filter.FromBranchName != "" {
+	//			obj, ok := event.Parameters["from_branch_name"]
+	//			if ok && !helper.Contains(obj, filter.FromBranchName) {
+	//				continue
+	//			}
+	//		}
+	//
+	//		if filter.IsMerge != "" {
+	//			obj, ok := event.Parameters["is_merge"]
+	//			if ok && !helper.Contains(obj, filter.IsMerge) {
+	//				continue
+	//			}
+	//		}
+	//
+	//		events = append(events, event)
+	//	}
+	//
+	//	subscribe.Events = events
+	//}
 
 	return subscribes
 }
