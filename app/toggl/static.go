@@ -107,7 +107,7 @@ func GetStatusSubscription(telegramChannelId int64) (bool, error) {
 
 	subscriptions, err := GetSubscriptions(userData.DefaultWorkspaceId, token.Token)
 
-	url := fmt.Sprintf("%s/%d", os.Getenv("TOGGLE_WEBHOOK_URL"), userData.Id)
+	url := fmt.Sprintf("%s/%d", os.Getenv("TOGGLE_WEBHOOK_URL"), user.TelegramChannelId)
 
 	if err != nil {
 		return false, err
