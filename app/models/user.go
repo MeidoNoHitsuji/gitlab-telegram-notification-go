@@ -3,7 +3,7 @@ package models
 import "gorm.io/gorm"
 
 const (
-	ToggleJiraIntegration = "toggle_jira_integration"
+	ToggleJiraIntegrationType = "toggle_jira_integration"
 )
 
 type User struct {

@@ -19,7 +19,7 @@ func New(Secret string) *mux.Router {
 	}
 
 	router.HandleFunc("/webhook", wh.ServeHTTP).Methods("POST")
-	router.HandleFunc("/webhook/toggle/{user_id}", WebToggle).Methods("POST")
+	router.HandleFunc("/webhook/toggle/{user_telegram_id}", WebToggle).Methods("POST")
 	router.HandleFunc("/webhook/toggle/{user_id}", GetWebToggle).Methods("GET")
 
 	return router

@@ -8,6 +8,8 @@ import (
 	"os"
 )
 
+const Description = "AtwintaTelegramBot subscription for Jira"
+
 func ActiveSubscription(telegramChannelId int64, active bool) error {
 	var token models.UserToken
 
@@ -40,22 +42,30 @@ func ActiveSubscription(telegramChannelId int64, active bool) error {
 		return err
 	}
 
-	url := fmt.Sprintf("%s/%d", os.Getenv("TOGGLE_WEBHOOK_URL"), userData.Id)
-
 	var needSubscription *SubscriptionData
 
 	for _, subscription := range subscriptions {
-		if subscription.UrlCallback == url {
+		if subscription.Description == Description {
 			needSubscription = subscription
 		}
 	}
 
+	url := fmt.Sprintf("%s/%d", os.Getenv("TOGGLE_WEBHOOK_URL"), user.TelegramChannelId)
+
 	if needSubscription != nil {
-		_, err = EnableSubscription(userData.DefaultWorkspaceId, needSubscription.SubscriptionId, active, token.Token)
+		if needSubscription.UrlCallback != url {
+			_, err = UpdateSubscriptions(userData.DefaultWorkspaceId, needSubscription.SubscriptionId, token.Token, SubscriptionData{
+				Enabled:     active,
+				UrlCallback: url,
+			})
+		} else {
+			_, err = EnableSubscription(userData.DefaultWorkspaceId, needSubscription.SubscriptionId, active, token.Token)
+		}
+
 		return err
 	} else {
 		_, err = CreateSubscription(userData.DefaultWorkspaceId, token.Token, SubscriptionData{
-			Description: "AtwintaTelegramBot subscription for Jira",
+			Description: Description,
 			Enabled:     active,
 			UrlCallback: url,
 			EventFilters: []SubscriptionEventData{

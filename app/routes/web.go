@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"gitlab-telegram-notification-go/gitclient"
+	"gitlab-telegram-notification-go/jiraclient"
+	"gitlab-telegram-notification-go/routes/request"
 	"gitlab-telegram-notification-go/toggl"
 	"html/template"
 	"io/ioutil"
@@ -78,11 +80,6 @@ func GetWebToggle(w http.ResponseWriter, r *http.Request) {
 func WebToggle(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	if vars["user_id"] == "" {
-		http.Error(w, "user_id not found", http.StatusUnprocessableEntity)
-		return
-	}
-
 	signature := r.Header.Get("X-Webhook-Signature-256")
 
 	if signature == "" {
@@ -110,7 +107,18 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var result ValidationData
+	if vars["user_telegram_id"] == "" {
+		http.Error(w, "user_telegram_id not found", http.StatusUnprocessableEntity)
+		return
+	}
+
+	telegramChannelId, err := strconv.ParseInt(vars["user_telegram_id"], 10, 64)
+	if err != nil {
+		http.Error(w, "user_telegram_id not found", http.StatusUnprocessableEntity)
+		return
+	}
+
+	var result request.ValidationData
 
 	err = json.Unmarshal(body, &result)
 
@@ -138,12 +146,21 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var data ToggleData
+	var data request.ToggleData
 
 	err = json.Unmarshal(body, &data)
 
 	if err != nil {
 		fmt.Println(err)
+		http.Error(w, "Bad Body", http.StatusBadRequest)
+		return
+	}
+
+	if data.Metadata.Action == "updated" {
+
+		jiraclient.UpdateJiraWorklog(telegramChannelId, data)
+	} else if data.Metadata.Action == "deleted" {
+		jiraclient.DeleteJiraWorklog(telegramChannelId, data)
 	}
 
 	w.WriteHeader(200)

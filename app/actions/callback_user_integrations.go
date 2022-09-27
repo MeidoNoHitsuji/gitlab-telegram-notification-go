@@ -63,7 +63,7 @@ func (act *UserIntegrationsAction) Active(update tgbotapi.Update) error {
 	}).First(&user)
 
 	switch act.CallbackData.IntegrationType {
-	case models.ToggleJiraIntegration:
+	case models.ToggleJiraIntegrationType:
 		res := db.Where(models.UserToken{
 			UserId:    user.ID,
 			TokenType: models.ToggleToken,
@@ -91,14 +91,14 @@ func (act *UserIntegrationsAction) Active(update tgbotapi.Update) error {
 		}).First(&user)
 
 		res = db.Where(models.UserIntegrations{
-			IntegrationType: models.ToggleJiraIntegration,
+			IntegrationType: models.ToggleJiraIntegrationType,
 			User:            user,
 		}).First(&integration)
 
 		if res.RowsAffected == 0 {
 			integration.Active = true
 			integration.UserId = user.ID
-			integration.IntegrationType = models.ToggleJiraIntegration
+			integration.IntegrationType = models.ToggleJiraIntegrationType
 			db.Omit("User").Create(&integration)
 		} else {
 			integration.Active = !integration.Active
@@ -203,7 +203,7 @@ func (act *UserIntegrationsAction) Active(update tgbotapi.Update) error {
 
 func AllowIntegrations() map[string]map[string]string {
 	return map[string]map[string]string{
-		models.ToggleJiraIntegration: {
+		models.ToggleJiraIntegrationType: {
 			"title":       "Toggle - Jira",
 			"description": "Интеграция времени между Toggle и Jira. Если у вашего трекера в Toggle будет в начале номер карточки, то время, которое вы трекали, будет автоматически добавлено в соответствующую карточку, если у вас есть доступ до неё. Для этого нужно обязательно заполнить токены Toggle и Jira.",
 		},
