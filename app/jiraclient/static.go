@@ -74,14 +74,15 @@ func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 			return
 		}
 
-		min := data.Payload.Duration / 60
-		if min == 0 {
-			min++
-		}
+		//min := data.Payload.Duration / 60
+		//if min == 0 {
+		//	min++
+		//}
 
 		worklogRecord, _, err := client.Issue.AddWorklogRecord(issue.ID, &jira.WorklogRecord{
-			Started:   getTime(data.Payload.Start),
-			TimeSpent: fmt.Sprintf("%ds", min),
+			Comment:          "Created by TelegramBot",
+			Started:          getTime(data.Payload.Start),
+			TimeSpentSeconds: data.Payload.Duration,
 		})
 
 		if err != nil {
