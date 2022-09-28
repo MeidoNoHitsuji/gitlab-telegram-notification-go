@@ -92,7 +92,7 @@ func (act *UserIntegrationsAction) Active(update tgbotapi.Update) error {
 
 		res = db.Where(models.UserIntegrations{
 			IntegrationType: models.ToggleJiraIntegrationType,
-			User:            user,
+			UserId:          user.ID,
 		}).First(&integration)
 
 		if res.RowsAffected == 0 {

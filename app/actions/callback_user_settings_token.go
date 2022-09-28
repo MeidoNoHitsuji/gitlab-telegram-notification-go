@@ -93,8 +93,10 @@ func (act *UserSettingTokensAction) Active(update tgbotapi.Update) error {
 				TelegramChannelId: chatId,
 			}
 
+			db.First(&user)
+
 			res := db.Where(models.UserToken{
-				User:      user,
+				UserId:    user.ID,
 				TokenType: act.CallbackData.TokenType,
 			}).First(&token)
 
@@ -105,7 +107,7 @@ func (act *UserSettingTokensAction) Active(update tgbotapi.Update) error {
 			} else {
 				token.Token = act.CallbackData.TokenValue
 				if res.RowsAffected == 0 {
-					db.First(&user)
+
 					token.UserId = user.ID
 					token.TokenType = act.CallbackData.TokenType
 					db.Omit("User").Create(&token)
