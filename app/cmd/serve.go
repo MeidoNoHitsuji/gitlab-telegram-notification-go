@@ -43,14 +43,38 @@ func serve(cmd *cobra.Command, args []string) {
 			if update.MyChatMember.Chat.Type == "private" {
 				if update.MyChatMember.OldChatMember.Status == "kicked" && update.MyChatMember.NewChatMember.Status == "member" {
 					database.UpdateMemberStatus(update.MyChatMember.Chat.ID, update.MyChatMember.From.UserName, false)
+					continue
 				} else if update.MyChatMember.OldChatMember.Status == "member" && update.MyChatMember.NewChatMember.Status == "kicked" {
 					database.UpdateMemberStatus(update.MyChatMember.Chat.ID, update.MyChatMember.From.UserName, true)
+					continue
 				}
 			} else if update.MyChatMember.Chat.Type == "group" {
 				if update.MyChatMember.OldChatMember.Status == "left" && update.MyChatMember.NewChatMember.Status == "member" {
 					database.UpdateChatStatus(update.MyChatMember.Chat.ID, false)
+					continue
 				} else if update.MyChatMember.OldChatMember.Status == "member" && update.MyChatMember.NewChatMember.Status == "left" {
 					database.UpdateChatStatus(update.MyChatMember.Chat.ID, true)
+					continue
+				}
+			}
+		}
+
+		if update.Message != nil {
+			if update.Message.Chat.ID < 0 {
+				if update.Message.LeftChatMember != nil && update.Message.LeftChatMember.ID == bot.Self.ID {
+					database.UpdateChatStatus(update.Message.Chat.ID, true)
+					continue
+				} else if len(update.Message.NewChatMembers) > 0 {
+					found := false
+					for _, member := range update.Message.NewChatMembers {
+						if member.ID == bot.Self.ID {
+							database.UpdateChatStatus(update.Message.Chat.ID, false)
+							found = true
+						}
+					}
+					if found {
+						continue
+					}
 				}
 			}
 		}
