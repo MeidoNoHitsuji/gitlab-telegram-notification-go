@@ -11,6 +11,11 @@ import (
 )
 
 func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
+
+	if data.Payload.Duration < 0 {
+		return
+	}
+
 	issueKey := GetIssueKeyFromText(data.Payload.Description)
 
 	if issueKey == "" {
@@ -69,9 +74,14 @@ func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 			return
 		}
 
+		min := data.Payload.Duration / 60
+		if min == 0 {
+			min++
+		}
+
 		worklogRecord, _, err := client.Issue.AddWorklogRecord(issue.ID, &jira.WorklogRecord{
-			Started:          getTime(data.Payload.Start),
-			TimeSpentSeconds: data.Payload.Duration,
+			Started:   getTime(data.Payload.Start),
+			TimeSpent: fmt.Sprintf("%ds", min),
 		})
 
 		if err != nil {
