@@ -98,6 +98,7 @@ func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 		}
 
 		db.Save(&eventIntegration)
+		fmt.Println("Трекер добавлен!")
 	} else {
 		if eventIntegration.IssueId != IssueId {
 			fmt.Println("Пересоздаём карточку") //Мне лень расписывать отдельно по запросам
