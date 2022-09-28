@@ -85,29 +85,6 @@ func GetWebToggle(w http.ResponseWriter, r *http.Request) {
 func WebToggle(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	if vars["user_telegram_id"] == "" {
-		http.Error(w, "user_telegram_id not found", http.StatusUnprocessableEntity)
-		return
-	}
-
-	telegramChannelId, err := strconv.ParseInt(vars["user_telegram_id"], 10, 64)
-	if err != nil {
-		http.Error(w, "user_telegram_id not found", http.StatusUnprocessableEntity)
-		return
-	}
-
-	_, ok := limited[telegramChannelId]
-
-	if ok {
-		w.WriteHeader(200)
-		return
-	}
-
-	limited[telegramChannelId] = time.Now().Add(5 * time.Second)
-
-	fmt.Println(limited)
-	fmt.Println("id канала добавлено")
-
 	signature := r.Header.Get("X-Webhook-Signature-256")
 
 	if signature == "" {
@@ -132,6 +109,18 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 	if !toggl.HmacIsValid(string(body), signature, secret) {
 		fmt.Println("Unauthorized")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if vars["user_telegram_id"] == "" {
+		http.Error(w, "user_telegram_id not found", http.StatusUnprocessableEntity)
+		return
+	}
+
+	telegramChannelId, err := strconv.ParseInt(vars["user_telegram_id"], 10, 64)
+
+	if err != nil {
+		http.Error(w, "user_telegram_id not found", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -173,6 +162,18 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad Body", http.StatusBadRequest)
 		return
 	}
+
+	_, ok := limited[data.EventId]
+
+	if ok {
+		w.WriteHeader(200)
+		return
+	}
+
+	limited[data.EventId] = time.Now().Add(5 * time.Second)
+
+	fmt.Println(limited)
+	fmt.Println("id канала добавлено")
 
 	if data.Metadata.Action == "updated" {
 		jiraclient.UpdateJiraWorklog(telegramChannelId, data)
