@@ -3,6 +3,7 @@ package jiraclient
 import (
 	"fmt"
 	"github.com/andygrunwald/go-jira"
+	"github.com/trivago/tgo/tmath"
 	"gitlab-telegram-notification-go/database"
 	"gitlab-telegram-notification-go/models"
 	"gitlab-telegram-notification-go/routes/request"
@@ -74,15 +75,10 @@ func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 			return
 		}
 
-		//min := data.Payload.Duration / 60
-		//if min == 0 {
-		//	min++
-		//}
-
 		worklogRecord, _, err := client.Issue.AddWorklogRecord(issue.ID, &jira.WorklogRecord{
 			Comment:          "Created by TelegramBot",
 			Started:          getTime(data.Payload.Start),
-			TimeSpentSeconds: data.Payload.Duration,
+			TimeSpentSeconds: tmath.MaxI(data.Payload.Duration, 60),
 		})
 
 		if err != nil {
