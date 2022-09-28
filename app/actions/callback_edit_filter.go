@@ -385,7 +385,7 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 
 		keyboards = append(keyboards,
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Отчистить параметер", string(deleteParamOut)),
+				tgbotapi.NewInlineKeyboardButtonData("Очистить параметер", string(deleteParamOut)),
 				tgbotapi.NewInlineKeyboardButtonData("Изменить параметр", string(dropParamOut)),
 			),
 		)
