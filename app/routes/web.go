@@ -167,13 +167,16 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	limited[data.EventId] = time.Now().Add(10 * time.Second)
+
+	fmt.Println(limited)
+	fmt.Println("id ивента добавлено")
+
 	if data.Metadata.Action == "updated" {
 		jiraclient.UpdateJiraWorklog(telegramChannelId, data)
 	} else if data.Metadata.Action == "deleted" {
 		jiraclient.DeleteJiraWorklog(telegramChannelId, data)
 	}
-
-	limited[data.EventId] = time.Now().Add(10 * time.Second)
 
 	w.WriteHeader(200)
 }
