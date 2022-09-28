@@ -88,12 +88,11 @@ func (act *UserSettingTokensAction) Active(update tgbotapi.Update) error {
 	if act.CallbackData != nil {
 		if act.CallbackData.TokenType != "" && act.CallbackData.TokenValue != "" {
 			var token models.UserToken
+			var user models.User
 
-			user := models.User{
+			db.Where(models.User{
 				TelegramChannelId: chatId,
-			}
-
-			db.First(&user)
+			}).Find(&user)
 
 			res := db.Where(models.UserToken{
 				UserId:    user.ID,

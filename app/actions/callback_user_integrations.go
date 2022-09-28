@@ -84,11 +84,6 @@ func (act *UserIntegrationsAction) Active(update tgbotapi.Update) error {
 		}
 
 		var integration models.UserIntegrations
-		var user models.User
-
-		db.Where(models.User{
-			TelegramChannelId: chatId,
-		}).First(&user)
 
 		res = db.Where(models.UserIntegrations{
 			IntegrationType: models.ToggleJiraIntegrationType,
