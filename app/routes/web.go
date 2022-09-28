@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	limited map[int64]time.Time
+	limited = make(map[int64]time.Time)
 )
 
 func WebIndex(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +103,7 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limited[telegramChannelId] = time.Now().Add(2 * time.Second)
+	limited[telegramChannelId] = time.Now().Add(5 * time.Second)
 
 	fmt.Println(limited)
 	fmt.Println("id канала добавлено")
