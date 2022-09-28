@@ -181,10 +181,10 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 		}
 	} else if act.CallbackData.ParameterName != "" {
 		if act.CallbackData.DeleteValue {
-			subscribeEvent.Parameters[act.CallbackData.ParameterName] = []string{}
+			subscribeEvent.Parameters[lowName[act.CallbackData.ParameterName]] = []string{}
 			db.Save(&subscribeEvent)
 		} else if act.CallbackData.ParameterValue != "" {
-			ps := subscribeEvent.Parameters[act.CallbackData.ParameterName]
+			ps := subscribeEvent.Parameters[lowName[act.CallbackData.ParameterName]]
 
 			parameterValues := strings.Split(act.CallbackData.ParameterValue, ", ")
 
@@ -196,7 +196,7 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 				}
 			}
 
-			subscribeEvent.Parameters[act.CallbackData.ParameterName] = ps
+			subscribeEvent.Parameters[lowName[act.CallbackData.ParameterName]] = ps
 			db.Save(&subscribeEvent)
 		}
 	}
@@ -229,7 +229,7 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 
 		if len(subscribeEvent.Parameters) != 0 {
 			for _, key := range parameterKeys {
-				currentParams, ok := subscribeEvent.Parameters[key]
+				currentParams, ok := subscribeEvent.Parameters[lowName[key]]
 
 				if ok && len(currentParams) > 0 {
 					var newCurrentParams []string
@@ -385,7 +385,7 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 
 		keyboards = append(keyboards,
 			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Отчистить параметер", string(deleteParamOut)),
+				tgbotapi.NewInlineKeyboardButtonData("Очистить параметер", string(deleteParamOut)),
 				tgbotapi.NewInlineKeyboardButtonData("Изменить параметр", string(dropParamOut)),
 			),
 		)
@@ -476,12 +476,20 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 const AnywhereValueParameter = "..."
 
 const (
-	AuthorUsernameParameter = "author_username"
-	FromBranchNameParameter = "from_branch_name"
-	ToBranchNameParameter   = "to_branch_name"
-	StatusParameter         = "status"
-	IsMergeParameter        = "is_merge"
+	AuthorUsernameParameter = "au"
+	FromBranchNameParameter = "fbn"
+	ToBranchNameParameter   = "tbn"
+	StatusParameter         = "s"
+	IsMergeParameter        = "im"
 )
+
+var lowName = map[string]string{
+	AuthorUsernameParameter: "author_username",
+	FromBranchNameParameter: "from_branch_name",
+	ToBranchNameParameter:   "to_branch_name",
+	StatusParameter:         "status",
+	IsMergeParameter:        "is_merge",
+}
 
 func ParameterNames() map[string]string {
 	return map[string]string{
