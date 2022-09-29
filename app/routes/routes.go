@@ -22,7 +22,7 @@ func New(Secret string) *mux.Router {
 
 	router.HandleFunc("/webhook", wh.ServeHTTP).Methods("POST")
 	router.HandleFunc("/webhook/toggle/{user_telegram_id}", WebToggle).Methods("POST")
-	router.Handle("/webhook/toggle/{user_id}", tollbooth.LimitFuncHandler(tollbooth.NewLimiter(10, nil), GetWebToggle)).Methods("GET")
+	router.Handle("/webhook/toggle/{user_id}", tollbooth.LimitFuncHandler(tollbooth.NewLimiter(1, nil), GetWebToggle)).Methods("GET")
 
 	go throttleToggleEvents()
 
