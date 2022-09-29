@@ -4,8 +4,10 @@ go 1.18
 
 require (
 	github.com/andygrunwald/go-jira v1.16.0 // indirect
+	github.com/didip/tollbooth/v7 v7.0.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
+	github.com/go-pkgz/expirable-cache v0.1.0 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.2-0.20220419141443-537c005643ad // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
