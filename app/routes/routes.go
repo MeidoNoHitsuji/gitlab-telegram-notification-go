@@ -1,9 +1,10 @@
 package routes
 
 import (
-	"github.com/didip/tollbooth/v7"
 	"github.com/gorilla/mux"
 	"github.com/xanzy/go-gitlab"
+	"gitlab-telegram-notification-go/routes/middleware"
+	"time"
 )
 
 func New(Secret string) *mux.Router {
@@ -20,8 +21,26 @@ func New(Secret string) *mux.Router {
 	}
 
 	router.HandleFunc("/webhook", wh.ServeHTTP).Methods("POST")
-	router.Handle("/webhook/toggle/{user_telegram_id}", tollbooth.LimitFuncHandler(tollbooth.NewLimiter(1, nil), WebToggle)).Methods("POST")
-	router.Handle("/webhook/toggle/{user_id}", tollbooth.LimitFuncHandler(tollbooth.NewLimiter(1, nil), GetWebToggle)).Methods("GET")
+	router.HandleFunc("/webhook/toggle/{user_telegram_id}", WebToggle).Methods("POST")
+	router.HandleFunc("/webhook/toggle/{user_id}", GetWebToggle).Methods("GET")
+	router.HandleFunc("/panic_test", GetPanic).Methods("GET")
+
+	router.Use(middleware.PanicRecovery)
+
+	go throttleToggleEvents()
 
 	return router
+}
+
+func throttleToggleEvents() {
+	for {
+		newLimited := make(map[int64]time.Time)
+		for e, t := range limited {
+			if time.Now().Before(t) {
+				newLimited[e] = t
+			}
+		}
+		limited = newLimited
+		time.Sleep(1 * time.Second)
+	}
 }

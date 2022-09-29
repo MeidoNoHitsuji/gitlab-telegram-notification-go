@@ -14,6 +14,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
+)
+
+var (
+	limited = make(map[int64]time.Time)
 )
 
 func WebIndex(w http.ResponseWriter, r *http.Request) {
@@ -158,6 +163,18 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, ok := limited[data.EventId]
+
+	if ok {
+		w.WriteHeader(200)
+		return
+	}
+
+	limited[data.EventId] = time.Now().Add(5 * time.Second)
+
+	fmt.Println(limited)
+	fmt.Println("id канала добавлено")
+
 	if data.Metadata.Action == "updated" {
 		jiraclient.UpdateJiraWorklog(telegramChannelId, data)
 	} else if data.Metadata.Action == "deleted" {
@@ -165,4 +182,8 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(200)
+}
+
+func GetPanic(w http.ResponseWriter, r *http.Request) {
+	panic("test")
 }

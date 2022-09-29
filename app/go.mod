@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	github.com/andygrunwald/go-jira v1.16.0 // indirect
-	github.com/didip/tollbooth/v7 v7.0.1 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-pkgz/expirable-cache v0.1.0 // indirect
