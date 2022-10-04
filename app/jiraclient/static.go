@@ -13,6 +13,13 @@ import (
 
 func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 
+	db := database.Instant()
+	var eventIntegration models.ToggleJiraIntegration
+
+	res := db.Where(models.ToggleJiraIntegration{
+		TimeEntityId: data.Payload.Id,
+	}).Find(&eventIntegration)
+
 	if data.Payload.Duration < 0 {
 		return
 	}
@@ -21,6 +28,11 @@ func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 
 	if issueKey == "" {
 		fmt.Println("Ключ не найден!!")
+
+		if res.RowsAffected != 0 {
+			DeleteJiraWorklog(telegramChannelId, data) //Если удалили ключ, то сносим карточку и у бд и в жире
+		}
+
 		return
 	}
 
@@ -65,13 +77,6 @@ func UpdateJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 		fmt.Println(err)
 		return
 	}
-
-	db := database.Instant()
-	var eventIntegration models.ToggleJiraIntegration
-
-	res := db.Where(models.ToggleJiraIntegration{
-		TimeEntityId: data.Payload.Id,
-	}).Find(&eventIntegration)
 
 	if res.RowsAffected == 0 {
 		eventIntegration.TimeEntityId = data.Payload.Id
