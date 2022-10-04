@@ -134,8 +134,7 @@ func DeleteJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 	issueKey := GetIssueKeyFromText(data.Payload.Description)
 
 	if issueKey == "" {
-		fmt.Println("Ключ не найден!!")
-		return
+		fmt.Println("При удалении ключ карточки не найден!! Пытаемся найти данные в бд!!")
 	}
 
 	client, err := New(telegramChannelId)
@@ -154,6 +153,7 @@ func DeleteJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 	}).Find(&eventIntegration)
 
 	if res.RowsAffected == 0 {
+		fmt.Println("При удалении данные в бд не найдены!!")
 		return
 	}
 
@@ -163,7 +163,11 @@ func DeleteJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 	worklogs, _, err := client.Issue.GetWorklogs(IssueId)
 
 	if err != nil {
-		fmt.Println("Ошибка получения ворклогов " + issueKey)
+		if issueKey != "" {
+			fmt.Println("Ошибка получения ворклогов " + issueKey)
+		} else {
+			fmt.Println("Ошибка получения ворклогов " + IssueId)
+		}
 		return
 	}
 
@@ -184,7 +188,12 @@ func DeleteJiraWorklog(telegramChannelId int64, data request.ToggleData) {
 	issue, _, err := client.Issue.Get(IssueId, &jira.GetQueryOptions{})
 
 	if err != nil {
-		fmt.Println("Ошибка запроса задачи " + issueKey)
+		if issueKey != "" {
+			fmt.Println("Ошибка запроса задачи " + issueKey)
+		} else {
+			fmt.Println("Ошибка запроса задачи " + IssueId)
+		}
+
 		fmt.Println(err)
 		return
 	}
