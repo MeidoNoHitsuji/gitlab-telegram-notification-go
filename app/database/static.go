@@ -131,6 +131,13 @@ func GetSubscribesByProjectIdAndKind(filter GetSubscribesFilter) []models.Subscr
 		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.AuthorUsername)
 	}
 
+	if filter.Source != "" {
+		p1 := "JSON_EXTRACT(subscribe_events.parameters, '$.source') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(subscribe_events.parameters, '$.source')) = 0"
+		p3 := "JSON_CONTAINS(subscribe_events.parameters, JSON_ARRAY(?), '$.source')"
+		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.Source)
+	}
+
 	if filter.ToBranchName != "" {
 		p1 := "JSON_EXTRACT(subscribe_events.parameters, '$.to_branch_name') is null"
 		p2 := "JSON_LENGTH(JSON_EXTRACT(subscribe_events.parameters, '$.to_branch_name')) = 0"
