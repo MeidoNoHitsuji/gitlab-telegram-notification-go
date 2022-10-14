@@ -240,7 +240,7 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 
 					text = fmt.Sprintf("%s\n> %s: %s", text, parameterNames[key], strings.Join(newCurrentParams, ", "))
 				} else {
-					text = fmt.Sprintf("%s\n> %s: %s", text, parameterNames[key], fm.Italic("Ну учитывается"))
+					text = fmt.Sprintf("%s\n> %s: %s", text, parameterNames[key], fm.Italic("Не учитывается"))
 				}
 			}
 		} else {
@@ -478,6 +478,7 @@ const AnywhereValueParameter = "..."
 const (
 	AuthorUsernameParameter = "au"
 	FromBranchNameParameter = "fbn"
+	SourceParameter         = "so"
 	ToBranchNameParameter   = "tbn"
 	StatusParameter         = "s"
 	IsMergeParameter        = "im"
@@ -486,6 +487,7 @@ const (
 var lowName = map[string]string{
 	AuthorUsernameParameter: "author_username",
 	FromBranchNameParameter: "from_branch_name",
+	SourceParameter:         "source",
 	ToBranchNameParameter:   "to_branch_name",
 	StatusParameter:         "status",
 	IsMergeParameter:        "is_merge",
@@ -495,6 +497,7 @@ func ParameterNames() map[string]string {
 	return map[string]string{
 		AuthorUsernameParameter: "Никнейм автора",
 		FromBranchNameParameter: "Изначальная ветка",
+		SourceParameter:         "Чем запущено",
 		ToBranchNameParameter:   "Конечная ветка",
 		StatusParameter:         "Статус",
 		IsMergeParameter:        "Это мерж",
@@ -512,6 +515,11 @@ func AllowParameters() map[string]map[string]map[string]string {
 				"master":               "",
 				"release":              "",
 				AnywhereValueParameter: "",
+			},
+			SourceParameter: map[string]string{
+				"push": "Push коммит",
+				"web":  "Сайт",
+				//TODO: Если понадобится, то добавлю ещё
 			},
 			ToBranchNameParameter: map[string]string{
 				"develop":              "",

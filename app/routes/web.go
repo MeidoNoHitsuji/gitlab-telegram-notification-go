@@ -54,7 +54,14 @@ func WebPipeline(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	commits, err := gitclient.GetCommitsLastPipeline(projectId, pipeline.BeforeSHA, pipeline.SHA)
+	beforePipeline, err := gitclient.GetBeforeFailedPipeline(projectId, pipeline.BeforeSHA, pipeline.Ref)
+	beforeSHA := pipeline.BeforeSHA
+
+	if err == nil && beforePipeline != nil {
+		beforeSHA = beforePipeline.BeforeSHA
+	}
+
+	commits, err := gitclient.GetCommitsLastPipeline(projectId, beforeSHA, pipeline.SHA)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -150,7 +150,14 @@ func Handler(event interface{}) error {
 		var data PipelineDefaultInterface
 
 		data = NewPipelineDefaultType(event)
-		commits, err := GetCommitsLastPipeline(event.Project.ID, event.ObjectAttributes.BeforeSHA, event.ObjectAttributes.SHA)
+		beforePipeline, err := GetBeforeFailedPipeline(event.Project.ID, event.ObjectAttributes.BeforeSHA, event.ObjectAttributes.Ref)
+		beforeSHA := event.ObjectAttributes.BeforeSHA
+
+		if err == nil && beforePipeline != nil {
+			beforeSHA = beforePipeline.BeforeSHA
+		}
+
+		commits, err := GetCommitsLastPipeline(event.Project.ID, beforeSHA, event.ObjectAttributes.SHA)
 
 		if err != nil {
 			break
@@ -211,4 +218,38 @@ func GetCommitsLastPipeline(projectId int, fromHash string, toHash string) ([]*g
 	}
 
 	return compare.Commits, nil
+}
+
+func GetBeforeFailedPipeline(projectId int, sha string, ref string) (*gitlab.Pipeline, error) {
+	git := Instant()
+	result, _, err := git.Pipelines.ListProjectPipelines(340, &gitlab.ListProjectPipelinesOptions{
+		ListOptions: gitlab.ListOptions{
+			PerPage: 1,
+		},
+		Status: gitlab.BuildState(gitlab.Failed),
+		SHA:    gitlab.String(sha),
+		Ref:    gitlab.String(ref),
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(result) == 0 {
+		return nil, nil
+	} else {
+		pipeline, _, err := git.Pipelines.GetPipeline(projectId, result[0].ID)
+
+		if err != nil {
+			return nil, err
+		}
+
+		beforePipeline, err := GetBeforeFailedPipeline(projectId, pipeline.BeforeSHA, pipeline.Ref)
+
+		if err == nil && beforePipeline != nil {
+			return beforePipeline, err
+		} else {
+			return pipeline, nil
+		}
+	}
 }
