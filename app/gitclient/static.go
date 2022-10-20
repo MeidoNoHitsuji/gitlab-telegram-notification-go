@@ -142,6 +142,7 @@ func Handler(event interface{}) error {
 			ProjectId:      event.Project.ID,
 			Event:          event.ObjectKind,
 			Status:         event.ObjectAttributes.Status,
+			Source:         event.ObjectAttributes.Source,
 			AuthorUsername: event.User.Username,
 			ToBranchName:   event.ObjectAttributes.Ref,
 			IsMerge:        IsMerge,
@@ -160,6 +161,7 @@ func Handler(event interface{}) error {
 		commits, err := GetCommitsLastPipeline(event.Project.ID, beforeSHA, event.ObjectAttributes.SHA)
 
 		if err != nil {
+			fmt.Println(err)
 			break
 		}
 
