@@ -16,6 +16,7 @@ func New(Secret string) *mux.Router {
 		EventsToAccept: []gitlab.EventType{
 			gitlab.EventTypeMergeRequest,
 			gitlab.EventTypePipeline,
+			gitlab.EventTypeNote,
 			gitlab.EventTypePush,
 		},
 	}
