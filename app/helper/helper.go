@@ -65,6 +65,7 @@ func AllowEventsWithName() map[string]string {
 	events := []string{
 		string(gitlab.EventTypePipeline),
 		string(gitlab.EventTypeMergeRequest),
+		string(gitlab.EventTypeNote),
 	}
 
 	newEvents := make(map[string]string)

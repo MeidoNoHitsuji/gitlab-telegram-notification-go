@@ -107,10 +107,11 @@ func Handler(event interface{}) error {
 		subscribeEvents := database.GetSubscribesByProjectIdAndKind(database.GetSubscribesFilter{
 			ProjectId:      event.Project.ID,
 			Event:          event.ObjectKind,
-			Status:         event.ObjectAttributes.State,
 			AuthorUsername: event.User.Username,
 			ToBranchName:   event.ObjectAttributes.TargetBranch,
+			Action:         event.ObjectAttributes.Action,
 		})
+
 		var message string
 
 		for _, subscribeEvent := range subscribeEvents {
@@ -202,6 +203,31 @@ func Handler(event interface{}) error {
 			} else {
 				fmt.Println(err)
 			}
+		}
+	case *gitlab.MergeCommentEvent:
+		subscribeEvents := database.GetSubscribesByProjectIdAndKind(database.GetSubscribesFilter{
+			ProjectId:         event.ProjectID,
+			Event:             event.ObjectKind,
+			AuthorUsername:    event.User.Username,
+			NotAuthorUsername: event.User.Username,
+		})
+
+		var message string
+
+		for _, subscribeEvent := range subscribeEvents {
+
+			data := MergeCommentDefaultType{
+				Event:     event,
+				Subscribe: &subscribeEvent.Subscribe,
+			}
+
+			message = data.Make()
+
+			if message == "" {
+				continue
+			}
+
+			telegram.SendMessageById(subscribeEvent.Subscribe.TelegramChannelId, message, nil, nil)
 		}
 	}
 	return nil

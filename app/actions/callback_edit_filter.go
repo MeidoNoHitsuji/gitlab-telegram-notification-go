@@ -476,31 +476,40 @@ func (act *EditFilterActon) Active(update tgbotapi.Update) error {
 const AnywhereValueParameter = "..."
 
 const (
-	AuthorUsernameParameter = "au"
-	FromBranchNameParameter = "fbn"
-	SourceParameter         = "so"
-	ToBranchNameParameter   = "tbn"
-	StatusParameter         = "s"
-	IsMergeParameter        = "im"
+	AuthorUsernameParameter    = "au"
+	NotAuthorUsernameParameter = "nau"
+	FromBranchNameParameter    = "fbn"
+	SourceParameter            = "so"
+	ToBranchNameParameter      = "tbn"
+	StatusParameter            = "s"
+	IsMergeParameter           = "im"
+	StateParameter             = "st"
+	ActionParameter            = "a"
 )
 
 var lowName = map[string]string{
-	AuthorUsernameParameter: "author_username",
-	FromBranchNameParameter: "from_branch_name",
-	SourceParameter:         "source",
-	ToBranchNameParameter:   "to_branch_name",
-	StatusParameter:         "status",
-	IsMergeParameter:        "is_merge",
+	AuthorUsernameParameter:    "author_username",
+	NotAuthorUsernameParameter: "not_author_username",
+	FromBranchNameParameter:    "from_branch_name",
+	SourceParameter:            "source",
+	ToBranchNameParameter:      "to_branch_name",
+	StatusParameter:            "status",
+	IsMergeParameter:           "is_merge",
+	StateParameter:             "state",
+	ActionParameter:            "action",
 }
 
 func ParameterNames() map[string]string {
 	return map[string]string{
-		AuthorUsernameParameter: "Никнейм автора",
-		FromBranchNameParameter: "Изначальная ветка",
-		SourceParameter:         "Чем запущено",
-		ToBranchNameParameter:   "Конечная ветка",
-		StatusParameter:         "Статус",
-		IsMergeParameter:        "Это мерж",
+		AuthorUsernameParameter:    "Никнейм автора",
+		NotAuthorUsernameParameter: "За исключением автора",
+		FromBranchNameParameter:    "Изначальная ветка",
+		SourceParameter:            "Чем запущено",
+		ToBranchNameParameter:      "Конечная ветка",
+		StatusParameter:            "Статус",
+		IsMergeParameter:           "Это мерж",
+		StateParameter:             "Состояние",
+		ActionParameter:            "Действие",
 	}
 }
 
@@ -534,6 +543,31 @@ func AllowParameters() map[string]map[string]map[string]string {
 			IsMergeParameter: map[string]string{
 				"true":  "Да",
 				"false": "Нет",
+			},
+		},
+		"merge_request": {
+			AuthorUsernameParameter: map[string]string{
+				AnywhereValueParameter: "",
+			},
+			ActionParameter: map[string]string{
+				"open":     "Открытие",
+				"approved": "Одобрение",
+				"merge":    "Слияние",
+				"close":    "Закрытие",
+			},
+			ToBranchNameParameter: map[string]string{
+				"develop":              "",
+				"master":               "",
+				"release":              "",
+				AnywhereValueParameter: "",
+			},
+		},
+		"note": {
+			AuthorUsernameParameter: map[string]string{
+				AnywhereValueParameter: "",
+			},
+			NotAuthorUsernameParameter: map[string]string{
+				AnywhereValueParameter: "",
 			},
 		},
 	}

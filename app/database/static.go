@@ -131,6 +131,13 @@ func GetSubscribesByProjectIdAndKind(filter GetSubscribesFilter) []models.Subscr
 		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.AuthorUsername)
 	}
 
+	if filter.NotAuthorUsername != "" {
+		p1 := "JSON_EXTRACT(subscribe_events.parameters, '$.not_author_username') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(subscribe_events.parameters, '$.not_author_username')) = 0"
+		p3 := "NOT JSON_CONTAINS(subscribe_events.parameters, JSON_ARRAY(?), '$.not_author_username')"
+		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.NotAuthorUsername)
+	}
+
 	if filter.Source != "" {
 		p1 := "JSON_EXTRACT(subscribe_events.parameters, '$.source') is null"
 		p2 := "JSON_LENGTH(JSON_EXTRACT(subscribe_events.parameters, '$.source')) = 0"
@@ -157,6 +164,20 @@ func GetSubscribesByProjectIdAndKind(filter GetSubscribesFilter) []models.Subscr
 		p2 := "JSON_LENGTH(JSON_EXTRACT(subscribe_events.parameters, '$.is_merge')) = 0"
 		p3 := "JSON_CONTAINS(subscribe_events.parameters, JSON_ARRAY(?), '$.is_merge')"
 		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.IsMerge)
+	}
+
+	if filter.Action != "" {
+		p1 := "JSON_EXTRACT(subscribe_events.parameters, '$.action') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(subscribe_events.parameters, '$.action')) = 0"
+		p3 := "JSON_CONTAINS(subscribe_events.parameters, JSON_ARRAY(?), '$.action')"
+		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.Action)
+	}
+
+	if filter.State != "" {
+		p1 := "JSON_EXTRACT(subscribe_events.parameters, '$.state') is null"
+		p2 := "JSON_LENGTH(JSON_EXTRACT(subscribe_events.parameters, '$.state')) = 0"
+		p3 := "JSON_CONTAINS(subscribe_events.parameters, JSON_ARRAY(?), '$.state')"
+		builder = builder.Where(fmt.Sprintf("(%s or %s or %s)", p1, p2, p3), filter.State)
 	}
 	builder = builder.Find(&subscribes)
 
