@@ -351,7 +351,7 @@ func (t *MergeCommentDefaultType) Make() string {
 
 	message = fmt.Sprintf("%s\n—————\n%s", message, fm.Link(t.Event.MergeRequest.Title, fmt.Sprintf("%s/-/merge_requests/%d", t.Event.MergeRequest.Source.WebURL, t.Event.MergeRequest.IID)))
 
-	message = fmt.Sprintf("%s\n\n✍: %s", message, tgbotapi.EscapeText(tgbotapi.ModeHTML, t.Event.ObjectAttributes.Note))
+	message = fmt.Sprintf("%s\n\n✍: %s (%s)", message, tgbotapi.EscapeText(tgbotapi.ModeHTML, t.Event.ObjectAttributes.Note), fm.Link("🔗", t.Event.ObjectAttributes.URL))
 	url = fmt.Sprintf("%s/%s", os.Getenv("GITLAB_URL"), t.Event.User.Username)
 	message = fmt.Sprintf("%s\n🧙: %s", message, fm.Link(t.Event.User.Name, url))
 
