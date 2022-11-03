@@ -143,6 +143,7 @@ func (act *EditFilterParameterActon) Active(update tgbotapi.Update) error {
 
 	keyboard := tgbotapi.NewReplyKeyboard(keyboards...)
 	keyboard.OneTimeKeyboard = true
+	keyboard.Selective = true
 
 	text := "Выберите одно из значений, предоставленных снизу или введите значение сами.\nЕсли введённое вами значение уже было фильте, то оно будет удалено."
 

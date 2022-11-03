@@ -69,6 +69,7 @@ func (act *UserSettingEnterTokenAction) Active(update tgbotapi.Update) error {
 
 	keyboard := tgbotapi.NewReplyKeyboard(keyboards...)
 	keyboard.OneTimeKeyboard = true
+	keyboard.Selective = true
 
 	actualIntegration := ActualIntegrationTokens()
 

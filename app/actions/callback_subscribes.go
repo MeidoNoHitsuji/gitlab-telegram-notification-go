@@ -66,6 +66,7 @@ func (act *SubscribesAction) Active(update tgbotapi.Update) error {
 
 	keyboard := tgbotapi.NewReplyKeyboard(keyboardRows...)
 	keyboard.OneTimeKeyboard = true
+	keyboard.Selective = true
 
 	telegram.SendMessageById(
 		message.Chat.ID,
