@@ -321,6 +321,8 @@ func (t *MergeDefaultType) Make() string {
 	url := fm.Link(t.Event.Project.Name, t.Event.Project.WebURL)
 	if t.Event.ObjectAttributes.Action == "open" {
 		message = fmt.Sprintf("🎭🚀 Новый MergeRequest! | %s (%d)", url, t.Event.Project.ID)
+	} else if t.Event.ObjectAttributes.Action == "update" {
+		message = fmt.Sprintf("🎭🔄 MergeRequest был обновлён! | %s (%d)", url, t.Event.Project.ID)
 	} else if t.Event.ObjectAttributes.Action == "approved" {
 		message = fmt.Sprintf("🎭✅ MergeRequest был принят! | %s (%d)", url, t.Event.Project.ID)
 	} else if t.Event.ObjectAttributes.Action == "merge" {

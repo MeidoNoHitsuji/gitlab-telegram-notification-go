@@ -551,6 +551,7 @@ func AllowParameters() map[string]map[string]map[string]string {
 			},
 			ActionParameter: map[string]string{
 				"open":     "Открытие",
+				"update":   "Обновление",
 				"approved": "Одобрение",
 				"merge":    "Слияние",
 				"close":    "Закрытие",
