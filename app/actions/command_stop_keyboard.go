@@ -14,7 +14,7 @@ type StopKeyboardAction struct {
 func NewStopKeyboardAction() *StopKeyboardAction {
 	return &StopKeyboardAction{
 		BaseAction: BaseAction{
-			ID:       Say,
+			ID:       StopKeyboard,
 			InitBy:   []ActionInitByType{InitByCommand},
 			InitText: "stop_keyboard",
 		},

@@ -35,6 +35,7 @@ func GetActualActions() []BaseInterface {
 		NewUserSettingTokensAction(),
 		NewUserSettingEnterTokenAction(),
 		NewSayAction(),
+		NewStopKeyboardAction(),
 		NewSubscribesAction(),
 		NewSelectProjectAction(),
 		NewSelectProjectSettingsAction(),
