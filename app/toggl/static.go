@@ -8,9 +8,8 @@ import (
 	"os"
 )
 
-const Description = "AtwintaTelegramBot subscription for Jira"
-
 func ActiveSubscription(telegramChannelId int64, active bool) error {
+	description := os.Getenv("TOGGLE_DESCRIPTION")
 	var token models.UserToken
 
 	db := database.Instant()
@@ -45,7 +44,7 @@ func ActiveSubscription(telegramChannelId int64, active bool) error {
 	var needSubscription *SubscriptionData
 
 	for _, subscription := range subscriptions {
-		if subscription.Description == Description {
+		if subscription.Description == description {
 			needSubscription = subscription
 		}
 	}
@@ -65,7 +64,7 @@ func ActiveSubscription(telegramChannelId int64, active bool) error {
 		return err
 	} else {
 		_, err = CreateSubscription(userData.DefaultWorkspaceId, token.Token, SubscriptionData{
-			Description: Description,
+			Description: description,
 			Enabled:     active,
 			UrlCallback: url,
 			EventFilters: []SubscriptionEventData{
