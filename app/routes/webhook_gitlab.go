@@ -3,6 +3,7 @@ package routes
 import (
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/gitclient"
 	"io"
@@ -19,23 +20,25 @@ type Webhook struct {
 
 // ServeHTTP tries to parse Gitlab events sent and calls handle function
 // with the successfully parsed events.
-func (hook Webhook) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	event, err := hook.parse(request)
+func (hook Webhook) ServeHTTP(c *gin.Context) {
+	event, err := hook.parse(c.Request)
 	if err != nil {
-		writer.WriteHeader(500)
-		writer.Write([]byte(fmt.Sprintf("could parse the webhook event: %v", err)))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": fmt.Sprintf("Could parse the webhook event: %v", err),
+		})
 		return
 	}
 
 	// Handle the event before we return.
 	if err := gitclient.Handler(event); err != nil {
-		writer.WriteHeader(500)
-		writer.Write([]byte(fmt.Sprintf("error handling the event: %v", err)))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": fmt.Sprintf("Error handling the event: %v", err),
+		})
 		return
 	}
 
 	// Write a response when were done.
-	writer.WriteHeader(204)
+	c.Status(http.StatusNoContent)
 }
 
 // parse verifies and parses the events specified in the request and

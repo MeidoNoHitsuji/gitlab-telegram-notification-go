@@ -3,13 +3,12 @@ package routes
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"gitlab-telegram-notification-go/gitclient"
 	"gitlab-telegram-notification-go/jiraclient"
 	"gitlab-telegram-notification-go/routes/request"
 	"gitlab-telegram-notification-go/toggl"
-	"html/template"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -21,36 +20,38 @@ var (
 	limited = make(map[int64]time.Time)
 )
 
-func WebIndex(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles("static/index.html")
-	err := t.Execute(w, nil)
-	if err != nil {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-	}
+func WebIndex(c *gin.Context) {
+	c.HTML(http.StatusOK, "index.html", gin.H{
+		"title": "Hello World!!",
+	})
 }
 
-func WebPipeline(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	if vars["project_id"] == "" {
-		http.Error(w, "Вы не передали параметр project_id", http.StatusUnprocessableEntity)
+func WebPipeline(c *gin.Context) {
+	if c.Param("project_id") == "" {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
+			"message": "Вы не передали параметр project_id",
+		})
 		return
 	}
 
-	if vars["pipeline_id"] == "" {
-		http.Error(w, "Вы не передали параметр pipeline_id", http.StatusUnprocessableEntity)
+	if c.Param("pipeline_id") == "" {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
+			"message": "Вы не передали параметр pipeline_id",
+		})
 		return
 	}
 
 	git := gitclient.Instant()
 
-	projectId, _ := strconv.Atoi(vars["project_id"])
-	pipelineId, _ := strconv.Atoi(vars["pipeline_id"])
+	projectId, _ := strconv.Atoi(c.Param("project_id"))
+	pipelineId, _ := strconv.Atoi(c.Param("pipeline_id"))
 
 	pipeline, _, err := git.Pipelines.GetPipeline(projectId, pipelineId)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
 		return
 	}
 
@@ -64,48 +65,38 @@ func WebPipeline(w http.ResponseWriter, r *http.Request) {
 	commits, err := gitclient.GetCommitsLastPipeline(projectId, beforeSHA, pipeline.SHA)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
 		return
 	}
 
 	data := gitclient.PipelineLogType{
 		Commits: commits,
 	}
-
-	w.Write([]byte(strings.ReplaceAll(strings.TrimSpace(data.Body()), "\n", "<br>")))
-	w.WriteHeader(200)
+	c.Data(
+		http.StatusOK,
+		"text/html; charset=utf-8",
+		[]byte(strings.ReplaceAll(strings.TrimSpace(data.Body()), "\n", "<br>")),
+	)
 }
 
-func GetWebToggle(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	if vars["user_id"] == "" {
-		http.Error(w, "Вы не передали параметр user_id", http.StatusUnprocessableEntity)
-		return
-	}
-
-	w.Write([]byte("Hello!"))
-
-	w.WriteHeader(200)
-}
-
-func WebToggle(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	signature := r.Header.Get("X-Webhook-Signature-256")
+func WebToggle(c *gin.Context) {
+	signature := c.GetHeader("X-Webhook-Signature-256")
 
 	if signature == "" {
-		fmt.Println("X-Webhook-Signature-256 not found")
-		http.Error(w, "X-Webhook-Signature-256 not found", http.StatusBadRequest)
+		c.String(http.StatusBadRequest, "X-Webhook-Signature-256 not found")
 		return
 	}
 
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := c.GetRawData()
 
 	if err != nil {
 		fmt.Println("Body not found")
-		http.Error(w, "Body not found", http.StatusBadRequest)
+		c.String(
+			http.StatusBadRequest,
+			"Body not found",
+		)
 		return
 	}
 
@@ -115,19 +106,28 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 
 	if !toggl.HmacIsValid(string(body), signature, secret) {
 		fmt.Println("Unauthorized")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		c.String(
+			http.StatusUnauthorized,
+			"Unauthorized",
+		)
 		return
 	}
 
-	if vars["user_telegram_id"] == "" {
-		http.Error(w, "user_telegram_id not found", http.StatusUnprocessableEntity)
+	if c.Param("user_telegram_id") == "" {
+		c.String(
+			http.StatusUnprocessableEntity,
+			"user_telegram_id not found",
+		)
 		return
 	}
 
-	telegramChannelId, err := strconv.ParseInt(vars["user_telegram_id"], 10, 64)
+	telegramChannelId, err := strconv.ParseInt(c.Param("user_telegram_id"), 10, 64)
 
 	if err != nil {
-		http.Error(w, "user_telegram_id not found", http.StatusUnprocessableEntity)
+		c.String(
+			http.StatusUnprocessableEntity,
+			"user_telegram_id not found",
+		)
 		return
 	}
 
@@ -147,16 +147,22 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		res, err := json.Marshal(response)
 
 		if err != nil {
-			http.Error(w, "Bad Body", http.StatusBadRequest)
+			c.String(
+				http.StatusBadRequest,
+				fmt.Sprintf("Bad Body: %s", err.Error()),
+			)
 			return
 		}
 
-		w.Write(res)
-		w.WriteHeader(200)
+		c.Data(
+			http.StatusOK,
+			fmt.Sprintf("%s; charset=utf-8", binding.MIMEJSON),
+			res,
+		)
 		return
 	} else if err == nil {
+		c.Status(http.StatusOK)
 		fmt.Println("Неизвестный запрос!!")
-		w.WriteHeader(200)
 		return
 	}
 
@@ -165,22 +171,12 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &data)
 
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Bad Body", http.StatusBadRequest)
+		c.String(
+			http.StatusBadRequest,
+			fmt.Sprintf("Bad Body: %s", err.Error()),
+		)
 		return
 	}
-
-	_, ok := limited[data.EventId]
-
-	if ok {
-		w.WriteHeader(200)
-		return
-	}
-
-	limited[data.EventId] = time.Now().Add(5 * time.Second)
-
-	fmt.Println(limited)
-	fmt.Println("id канала добавлено")
 
 	if data.Metadata.Action == "updated" {
 		jiraclient.UpdateJiraWorklog(telegramChannelId, data)
@@ -188,9 +184,5 @@ func WebToggle(w http.ResponseWriter, r *http.Request) {
 		jiraclient.DeleteJiraWorklog(telegramChannelId, data)
 	}
 
-	w.WriteHeader(200)
-}
-
-func GetPanic(w http.ResponseWriter, r *http.Request) {
-	panic("test")
+	c.Status(http.StatusOK)
 }

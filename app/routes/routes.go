@@ -1,16 +1,22 @@
 package routes
 
 import (
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
+	middleware2 "github.com/s12i/gin-throttle"
 	"github.com/xanzy/go-gitlab"
 	"gitlab-telegram-notification-go/routes/middleware"
 	"time"
 )
 
-func New(Secret string) *mux.Router {
-	router := mux.NewRouter()
-	router.HandleFunc("/", WebIndex).Methods("GET")
-	router.HandleFunc("/project/{project_id}/pipeline/{pipeline_id}", WebPipeline).Methods("GET")
+func New(Secret string) *gin.Engine {
+	router := gin.Default()
+
+	router.Use(gin.CustomRecovery(middleware.PanicRecovery))
+
+	router.LoadHTMLGlob("static/*")
+	router.GET("/", WebIndex)
+	router.GET("/project/:project_id/pipeline/:pipeline_id", WebPipeline)
+
 	wh := Webhook{
 		Secret: Secret,
 		EventsToAccept: []gitlab.EventType{
@@ -21,14 +27,13 @@ func New(Secret string) *mux.Router {
 		},
 	}
 
-	router.HandleFunc("/webhook", wh.ServeHTTP).Methods("POST")
-	router.HandleFunc("/webhook/toggle/{user_telegram_id}", WebToggle).Methods("POST")
-	router.HandleFunc("/webhook/toggle/{user_id}", GetWebToggle).Methods("GET")
-	router.HandleFunc("/panic_test", GetPanic).Methods("GET")
+	router.POST("/webhook", wh.ServeHTTP)
 
-	router.Use(middleware.PanicRecovery)
-
-	go throttleToggleEvents()
+	webhookToggle := router.Group("/webhook/toggle/:user_telegram_id")
+	webhookToggle.Use(middleware2.Throttle(1000, 1))
+	{
+		webhookToggle.POST("/", WebToggle)
+	}
 
 	return router
 }
