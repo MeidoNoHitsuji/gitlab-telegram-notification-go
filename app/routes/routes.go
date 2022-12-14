@@ -30,7 +30,7 @@ func New(Secret string) *gin.Engine {
 	router.POST("/webhook", wh.ServeHTTP)
 
 	webhookToggle := router.Group("/webhook/toggle/:user_telegram_id")
-	webhookToggle.Use(middleware2.Throttle(1000, 1))
+	webhookToggle.Use(middleware2.Throttle(1, 20))
 	{
 		webhookToggle.POST("/", WebToggle)
 	}
