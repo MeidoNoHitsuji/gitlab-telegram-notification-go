@@ -22,13 +22,14 @@ func migrate(cmd *cobra.Command, args []string) error {
 	ms := []interface{}{
 		&models.TelegramChannel{},
 		&models.User{},
+		&models.PersonalAccessToken{},
 		&models.Project{},
 		&models.Subscribe{},
 		&models.SubscribeEvent{},
 		&models.UserTelegramChannelAction{},
 		&models.UserToken{},
-		models.UserIntegrations{},
-		models.ToggleJiraIntegration{},
+		&models.UserIntegrations{},
+		&models.ToggleJiraIntegration{},
 	}
 
 	if err := db.AutoMigrate(ms...); err != nil {

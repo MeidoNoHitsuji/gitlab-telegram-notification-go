@@ -20,3 +20,10 @@ type UserIntegrations struct {
 	UserId          uint   `json:"user_id"`
 	User            User   `gorm:"foreignKey:UserId;references:ID;" json:"user"`
 }
+
+type PersonalAccessToken struct {
+	gorm.Model
+	Token  string `json:"token"`
+	UserId uint   `json:"user_id"`
+	User   User   `gorm:"foreignKey:UserId;references:ID;" json:"user"`
+}

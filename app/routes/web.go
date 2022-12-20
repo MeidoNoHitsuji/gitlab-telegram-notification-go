@@ -13,11 +13,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
-)
-
-var (
-	limited = make(map[int64]time.Time)
 )
 
 func WebIndex(c *gin.Context) {
